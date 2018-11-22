@@ -1,0 +1,48 @@
+* se-command node with link show
+* concurrent protect 
+* free store space reuse
+* save to file
+* transaction ACID
+* cluster
+--------------------
+login localhost:3721
+logout
+
+put node {name: 'Jack', age: 33}, {name: 'Jack', age: 33};
+put link ($fnode_id, $tnode_id) {type: 'Friend', start: '2010-10-10'}, ($fnode_id, $tnode_id) {type: 'Friend', start: '2010-10-10'};
+
+get node $node_id;
+get link $link_id;
+
+set node $node_id {age: 35, sex: 'M'}, $node_id {sex: 'F'};
+set link $link_id {start: '2016-09-11'};
+
+remove node $node_id, $node_id;
+remove link $link_id, $link_id;
+--------------------
+XDB-SE> login localhost:3721@sysdba/sysdba
+XDB-SE> put node('EMPLOYEE'...) {name: 'Jack', age: 33};
+XDB-SE> put link(1323, 345, 'FRIEND'...) {start: '2010-10-10'};
+XDB-SE> get node(123);
+XDB-SE> get link(123);
+XDB-SE> set node(123, 'FRIEND') {start: '2010-10-10'};
+XDB-SE> set link(123, 'FRIEND') {start: '2010-10-10'};
+XDB-SE> remove node(123);
+XDB-SE> logout
+XDB-SE> exit
+---------------------
+login localhost:3721@sysdba/sysdba
+put node('person') {name:'ychao'};
+put node('person') {name:'zpjin'};
+put node('person') {name:'mumu'};
+put link(486539266, 486539268, 'FATHER') {START: '2015-04-23'}
+
+
+
+
+
+
+
+
+
+

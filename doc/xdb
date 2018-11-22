@@ -1,0 +1,131 @@
+========================================================
+node / link / property / node_label / link_type
+========================================================
+
+#node.store
++-------+
+| HEAD  | => version(2) + crc(2) + lsn(4) + extra(24) #32Bytes
+|-------|    +------+
+| BLOCK | => | HEAD | => size(2) + free(2) + next(2) + extra(10) #16Bytes
+|-------|    |------|    +------+
+|  ...  |    | BODY | => | NODE | => info(1) + prop(4) + link(4) #9Bytes
+|-------|    +------+    |------|      |
+| BLOCK |                |  ..  |      |- [xxxx,xxxx] #free...
++-------+                |------|      
+                         | NODE |      
+                         +------+
+
+#link.store
++-------+
+| HEAD  | => version(2) + crc(2) + lsn(4) + extra(24) #32Bytes
+|-------|    +------+
+| BLOCK | => | HEAD | => size(2) + free(2) + next(2) + extra(10) #16Bytes
+|-------|    |------|    +------+
+|  ...  |    | BODY | => | LINK | => info(1) + from_node(4) + to_node(4) + from_node_prev(4) + from_node_next(4) + to_node_prev(4) + to_node_next(4) + prop(4) + link_type(4) #33Bytes
+|-------|    +------+    |------|      |
+| BLOCK |                |  ..  |      |- [xxxx,xxxx] #free...
++-------+                |------|      
+                         | LINK |      
+                         +------+      
+                                       
+#prop.store
++-------+
+| HEAD  | => version(2) + crc(2) + lsn(4) + extra(24) #32Bytes
+|-------|    +------+
+| BLOCK | => | HEAD | => size(2) + free(2) + next(2) + stat_min(2) + stat_max(2) + extra(6) #16Bytes
+|-------|    |------|    +------+
+|  ...  |    | BODY | => | PROP | => info(1) + nl(4) + next_prop(4) + prop_key(4) + prop_value(8) #21Bytes
+|-------|    +------+    |------|      |
+| BLOCK |                |  ..  |      |- [xxxx,----] #free...
++-------+                |------|      |- [----,xxxx] #data type
+                         | PROP |      
+                         +------+
+
+#prop_key.store
+        +---------+       
+     +--|NAME | ID|--+    
+     |  +---------+  |    
+     |       ^       |    
+     v       |       v    
+ +---------+ | +---------+
+ |NAME | ID| | |NAME | ID|
+ +---------+ | +---------+
+     ^       |       ^    
+     |       |       |    
+ +-----------------------+
+ | 0xABC | 0xABC | 0xABC |
+ +-----------------------+
+ 
+#prop_value.store
+
+
+
+
+
+#node_label.store
+#link_type.store
+B+Tree存储，易于定位，方便存储；
+
+tiger-graphy
+
+pana
+
+-----------------------------------------------------
+#node.store
+node_length: 11
+nodes_per_block: >= 1024
+block_head_length: 16
+block_body_length: node_length * nodes_per_block >= 11K 
+block_length: block_head_length + block_body_length >= 16 + 11K
+max_nodes: 2 ^ 32
+max_blocks: max_nodes / nodes_per_block <= 2 ^ 22 = 4 * 1024 * 1024
+block_index_array_length: max_blocks * 8 <= 32M (all in memory)
+max_store_length:  max_blocks * block_length <= 44G + 4M * 16 = 44G + 64M
+
+#link.store
+link_length: 40
+max_links: 2 ^ 32
+max_store_length: 40 * 4G = 160G
+
+#prop.store
+prop_length: 23
+max_props: 2 ^ 32
+max_store_length: 23 * 4G = 92G
+
+-----------------------------------------------------
+* 特征学习，静默刷盘；
+* 定长顺序自索引；
+
+
+
+
+ignite & alluxio
+-------------------------
+前期找了这两个开源框架，学习了下，也整理了些资料，有兴趣的可以参阅下，这两个框架不做过多介绍，只是列了些觉着有些参考价值的地方，
+
+#ignite
+(1)堆外内存 
+我们知道java有个GC的概念，在做FULL GC时会“stop the world”，会让应用有卡顿的感觉，jvm在运行时会对堆内存进行整理，涉及到堆内存的拷贝，
+堆外内存不直接受jvm控制，可以在一定程度上降低FULL GC对应用的影响，另外，堆外内存可以直接被OS访问，io操作可以减少一次内存拷贝，提升性能，
+堆外内存比较适合于大内存块、长生命周期场景，这和我们的使用场景也是相符的。
+
+(2)内存数据库
+ignite算是一个准内存数据库，它虽然有持久化机制，但可以配置是否开启，禁用后便运行在纯内存模式，内存模式好处是性能更高、实现逻辑相对简单，
+没有传统数据库的页缓存淘汰、脏页刷盘等限制，但制约因素就是装不下，我分析了下neo4j单站点数据打满，在property均为行内数据的情况存储开销
+在2.4T左右，单机满足这么大的内存配置还是比较苛刻的，如果放在集群环境中，总内存2.4T还是比较容易达到的，比如如果我们的存储站点数达到1024个，
+那分到单机的内存开销就变长2.4G，这个硬件配置还是比较容易满足的，我们的图数据库实现方案可以往内存方面倾斜，这也迎合当前的硬件发展方向，
+SSD、NVM、3D XPoint。
+
+#alluxio
+(1)储存计算分离
+存储计算分离也是当前比较热的一个概念，灵活性高、性能高、成本低，
+灵活性高体现在计算节点和存储节点独立部署，可以独立扩展、灰度升级；
+性能高体现在节点间通过网络进行连接，在硬件传输性能上(CPU > memory > nio > fio(ssd) > fio(hdd))；
+成本低体现在计算节点CPU密集型，存储节点io密集型，独立部署对硬件适配性更好；
+
+(2)thrift / protocol buffer
+这个算是比较具体的技术方案，thrift做rpc性能高，protocol buffer用来做对象的序列化和反序列化，也是以性能高著称，而且可以跨平台、跨语言，后面实现是可以考虑借鉴；
+
+
+
+

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+
+
+<project name="xdb" default="xdb">
+	<property file="build.properties" />
+	<property name="xdb.dir" value="${basedir}" />
+	<property name="xdb.src.dir" value="${xdb.dir}/src" />
+	<property name="xdb.classes.dir" value="${xdb.dir}/classes" />
+	<property name="xdb.lib.dir" value="${xdb.dir}/lib" />
+	<property name="xdb.build.dir" value="${xdb.dir}/build" />
+
+	<tstamp>
+		<format property="build_date" pattern="yyyy-MM-dd" locale="en" />
+	</tstamp>
+
+	<delete includeEmptyDirs="true">
+	  <fileset dir="${xdb.build.dir}" includes="**/*" defaultexcludes="no"/>
+	</delete>
+	
+	<mkdir dir="${xdb.build.dir}/lib" />
+	<mkdir dir="${xdb.build.dir}/log" />
+	
+	
+	<target name="xdb">
+		<copy todir="${xdb.build.dir}/lib">
+			<fileset dir="${xdb.lib.dir}">
+				<include name="**/*.jar" />
+			</fileset>
+		</copy>
+		<copy todir="${xdb.build.dir}">
+			<file name="${xdb.src.dir}/log4j.xml" />
+			<file name="${xdb.src.dir}/xdb.properties" />
+			<file name="${xdb.src.dir}/se.bat" />
+			<file name="${xdb.src.dir}/se-cmd.bat" />
+		</copy>
+
+		<jar destfile="${xdb.build.dir}/lib/xdb-${xdb.version}-(${build_date}).jar">
+			<fileset dir="${xdb.classes.dir}">
+				<include name="**/*.*" />
+				<exclude name="log4j.xml" />
+				<exclude name="XDB.g4" />
+				<exclude name="xdb.properties" />
+			</fileset>
+			<manifest>
+				<attribute name="Implementation-Vendor" value="Dameng" />
+				<attribute name="Implementation-Title" value="Dameng X-DB" />
+				<attribute name="Implementation-Version" value="- ${xdb.version} - Production" />
+				<attribute name="Build-Time" value="${build_date}" />
+				<attribute name="Main-Class" value="com.dameng.xdb.tool.SECommand" />
+			</manifest>
+		</jar>
+	</target>
+</project>

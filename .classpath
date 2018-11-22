@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="com/dameng/xdb/XDBError.java|com/dameng/xdb/se/driver/msg/MSG_C.java|com/dameng/xdb/se/driver/msg/MSG_S.java|com/dameng/xdb/util/Loader.java" kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+	<classpathentry kind="lib" path="lib/org.apache.log4j_1.2.15.v201005080500.jar"/>
+	<classpathentry kind="lib" path="lib/antlr-4.7.1-complete.jar" sourcepath="C:/Users/ychao/AppData/Local/Temp/.org.sf.feeling.decompiler1542846976140/source/antlr4-4.7.1-sources-1542847617272.jar"/>
+	<classpathentry kind="lib" path="lib/jline-2.14.6.jar" sourcepath="C:/Users/ychao/AppData/Local/Temp/.org.sf.feeling.decompiler1542285808409/source/jline-2.14.6-sources.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="output" path="classes"/>
+</classpath>

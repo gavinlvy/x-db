@@ -1,0 +1,1 @@
+java -Djava.ext.dirs=%JAVA_HOME%/jre/lib/ext;./lib com.dameng.xdb.se.StorageEngine
