@@ -1,8 +1,9 @@
 * se-command node with link show
 * concurrent protect 
+* transaction ACID
 * free store space reuse
 * save to file
-* transaction ACID
+
 * cluster
 --------------------
 login localhost:3721

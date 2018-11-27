@@ -65,6 +65,7 @@ options {
 	import com.dameng.xdb.stmt.SEGet;
 	import com.dameng.xdb.stmt.SERemove;
 	import com.dameng.xdb.stmt.SESet;
+	import com.dameng.xdb.stmt.SEShow;
 	import com.dameng.xdb.stmt.Statement;
 }
 
@@ -93,7 +94,7 @@ se_stmt returns [Statement ret]
 	{
 		$ret = new SELogin($host.ret, $port.ret);
 	}
-	
+
 	| KW_LOGIN host ':' port '@' user = identifier '/' password = identifier end
 	{
 		$ret = new SELogin($host.ret, $port.ret, $user.ret, $password.ret);
@@ -172,6 +173,16 @@ se_stmt returns [Statement ret]
 	| KW_REMOVE KW_LINK '(' obj_ids ')' end
 	{
 		$ret = new SERemove(false, $obj_ids.ret);
+	}
+
+	| KW_SHOW KW_NODE lt_numberic end
+	{
+		$ret = new SEShow(true, $lt_numberic.ret.intValue());
+	}
+
+	| KW_SHOW KW_LINK lt_numberic end
+	{
+		$ret = new SEShow(false, $lt_numberic.ret.intValue());
 	}
 
 ;
@@ -414,6 +425,11 @@ KW_SET
 KW_REMOVE
 :
 	R E M O V E
+;
+
+KW_SHOW
+:
+	S H O W
 ;
 
 KW_NODE

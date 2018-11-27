@@ -29,6 +29,8 @@ public class Statement
     public final static int TYPE_SE_SET = 105;
 
     public final static int TYPE_SE_REMOVE = 106;
+    
+    public final static int TYPE_SE_SHOW = 107;
 
     public int type;
 

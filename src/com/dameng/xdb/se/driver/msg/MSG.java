@@ -53,6 +53,8 @@ public abstract class MSG
     public final static byte COMMAND_SET = 4;
 
     public final static byte COMMAND_REMOVE = 5;
+    
+    public final static byte COMMAND_SHOW = 6;
 
     // some declare
     public final static byte GOBJ_TYPE_MASK = (byte)0x80;

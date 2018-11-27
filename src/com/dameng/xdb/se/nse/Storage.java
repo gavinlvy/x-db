@@ -7,8 +7,9 @@
 package com.dameng.xdb.se.nse;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.Map.Entry;
 
 import com.dameng.xdb.XDB;
 import com.dameng.xdb.XDBException;
@@ -27,18 +28,18 @@ import com.dameng.xdb.se.model.PropValue;
  */
 public class Storage implements IStorage
 {
-    private final static LTKStore LTK_STORE = new LTKStore();
+    public final static LTKStore LTK_STORE = new LTKStore();
 
-    private final static PVStore PV_STORE = new PVStore();
+    public final static PVStore PV_STORE = new PVStore();
 
-    private final static NLPStore NODE_STORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
-            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2], NLPStore.Node.LENGTH);
+    public final static NLPStore NODE_STORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
+            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2]);
 
-    private final static NLPStore LINK_STORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
-            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2], NLPStore.Link.LENGTH);
+    public final static NLPStore LINK_STORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
+            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2]);
 
-    private final static NLPStore PROP_STORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
-            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2], NLPStore.Prop.LENGTH);
+    public final static NLPStore PROP_STORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
+            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2]);
 
     private final static int ID_NULL = 0;
 
@@ -64,9 +65,8 @@ public class Storage implements IStorage
         for (int i = 0; i < nodes.length; ++i)
         {
             rets[i] = NODE_STORE.alloc(NODE_EBI);
-
             NODE.set(NLPStore.FREE_FALSE, putGObject(rets[i], nodes[i]), ID_NULL);
-            NODE_STORE.set(rets[i], NODE);
+            NODE_STORE.put(rets[i], NODE);
         }
 
         return rets;
@@ -96,8 +96,7 @@ public class Storage implements IStorage
             LINK.set(NLPStore.FREE_FALSE, putGObject(rets[i], links[i]), links[i].fnode, links[i].tnode,
                     adjustLinkForLinkPut(links[i].fnode, FNODE, rets[i]), ID_NULL,
                     adjustLinkForLinkPut(links[i].tnode, TNODE, rets[i]), ID_NULL);
-
-            LINK_STORE.set(rets[i], LINK);
+            LINK_STORE.put(rets[i], LINK);
         }
 
         return rets;
@@ -236,7 +235,7 @@ public class Storage implements IStorage
 
             // set new props
             NODE.prop = putGObject(nodes[i].id, nodes[i]);
-            NODE_STORE.set(nodes[i].id, NODE);
+            NODE_STORE.put(nodes[i].id, NODE);
         }
 
         return rets;
@@ -261,10 +260,47 @@ public class Storage implements IStorage
 
             // set new props
             LINK.prop = putGObject(links[i].id, links[i]);
-            LINK_STORE.set(links[i].id, LINK);
+            LINK_STORE.put(links[i].id, LINK);
         }
 
         return rets;
+    }
+
+    @Override
+    public Node[] showNodes(int count)
+    {
+        final List<NLPStore.Node> NODE_LIST = new ArrayList<>(count);
+        List<Integer> idList = NODE_STORE.show(true, count, NODE_LIST);
+
+        Node[] nodes = new Node[NODE_LIST.size()];
+        for (int i = 0; i < nodes.length; ++i)
+        {
+            nodes[i] = new Node(idList.get(i));
+            nodes[i].link = NODE_LIST.get(i).link;
+
+            getGObject(NODE_LIST.get(i).prop, nodes[i]);
+        }
+
+        return nodes;
+    }
+
+    @Override
+    public Link[] showLinks(int count)
+    {
+        final List<NLPStore.Link> LINK_LIST = new ArrayList<>(count);
+        List<Integer> idList = LINK_STORE.show(false, count, LINK_LIST);
+
+        Link[] links = new Link[LINK_LIST.size()];
+        for (int i = 0; i < links.length; ++i)
+        {
+            links[i] = new Link(idList.get(i));
+            links[i].fnode = LINK_LIST.get(i).fnode;
+            links[i].tnode = LINK_LIST.get(i).tnode;
+
+            getGObject(LINK_LIST.get(i).prop, links[i]);
+        }
+
+        return links;
     }
 
     private int putGObject(int id, GObject<?> obj)
@@ -275,14 +311,42 @@ public class Storage implements IStorage
         for (int j = 0; j < obj.categorys.length; ++j)
         {
             PROP.set(NLPStore.FREE_FALSE, ID_NULL, LTK_STORE.put(obj.categorys[j]), propId, id);
-            propId = PROP_STORE.put(PROP_EBI, PROP);
+            propId = PROP_STORE.alloc(PROP_EBI);
+            PROP_STORE.put(propId, PROP);
         }
 
         // properties -> prop.store
-        PropBiConsumer consumer = new PropBiConsumer(propId);
-        obj.propMap.forEach(consumer);
+        Iterator<Entry<String, PropValue>> iterator = obj.propMap.entrySet().iterator();
+        while (iterator.hasNext())
+        {
+            Entry<String, PropValue> entry = iterator.next();
+            String key = entry.getKey();
+            PropValue value = entry.getValue();
 
-        return consumer.propId;
+            // prop_value
+            long propValue = 0;
+            switch (value.type)
+            {
+                case PropValue.TYPE_NUMBERIC:
+                    propValue = (long)value.value;
+                    break;
+                case PropValue.TYPE_DECIMAL:
+                    propValue = Double.doubleToLongBits((double)value.value);
+                    break;
+                case PropValue.TYPE_BOOLEAN:
+                    propValue = (boolean)value.value ? 1 : 0;
+                    break;
+                default:
+                    propValue = PV_STORE.put((String)value.value);
+                    break;
+            }
+
+            PROP.set((byte)(NLPStore.FREE_FALSE | value.type), LTK_STORE.put(key), propValue, propId, id);
+            propId = PROP_STORE.alloc(PROP_EBI);
+            PROP_STORE.put(propId, PROP);
+        }
+
+        return propId;
     }
 
     private void getGObject(int propId, GObject<?> obj)
@@ -341,7 +405,7 @@ public class Storage implements IStorage
         if (NODE.link == ID_NULL)
         {
             NODE.link = linkId;
-            NODE_STORE.set(nodeId, NODE);
+            NODE_STORE.put(nodeId, NODE);
             return ID_NULL;
         }
 
@@ -356,7 +420,7 @@ public class Storage implements IStorage
                 if (LINK.fnodeNext == ID_NULL)
                 {
                     LINK.fnodeNext = linkId;
-                    LINK_STORE.set(adjustLinkId, LINK);
+                    LINK_STORE.put(adjustLinkId, LINK);
                     break;
                 }
                 else
@@ -369,7 +433,7 @@ public class Storage implements IStorage
                 if (LINK.tnodeNext == ID_NULL)
                 {
                     LINK.tnodeNext = linkId;
-                    LINK_STORE.set(adjustLinkId, LINK);
+                    LINK_STORE.put(adjustLinkId, LINK);
                     break;
                 }
                 else
@@ -400,7 +464,7 @@ public class Storage implements IStorage
             {
                 link.tnodeNext = isfnode ? LINK.fnodeNext : LINK.tnodeNext;
             }
-            LINK_STORE.set(prev, link);
+            LINK_STORE.put(prev, link);
         }
 
         // adjust next link
@@ -417,7 +481,7 @@ public class Storage implements IStorage
             {
                 link.tnodePrev = isfnode ? LINK.fnodePrev : LINK.tnodePrev;
             }
-            LINK_STORE.set(LINK.fnodeNext, link);
+            LINK_STORE.put(LINK.fnodeNext, link);
         }
 
         // adjust node(remove link is the only one)
@@ -426,46 +490,7 @@ public class Storage implements IStorage
             final NLPStore.Node NODE = new NLPStore.Node();
             NODE_STORE.get(nodeId, NODE);
             NODE.link = next;
-            NODE_STORE.set(nodeId, NODE);
-        }
-    }
-
-    class PropBiConsumer implements BiConsumer<String, PropValue>
-    {
-        public int propId = ID_NULL;
-
-        private final NLPStore.Prop PROP = new NLPStore.Prop();
-
-        public PropBiConsumer(int propId)
-        {
-            this.propId = propId;
-        }
-
-        @Override
-        public void accept(String key, PropValue value)
-        {
-            // prop_value
-            long propValue = 0;
-            switch (value.type)
-            {
-                case PropValue.TYPE_NUMBERIC:
-                    propValue = (long)value.value;
-                    break;
-                case PropValue.TYPE_DECIMAL:
-                    propValue = Double.doubleToLongBits((double)value.value);
-                    break;
-                case PropValue.TYPE_BOOLEAN:
-                    propValue = (boolean)value.value ? 1 : 0;
-                    break;
-                default:
-                    propValue = PV_STORE.put((String)value.value);
-                    break;
-            }
-
-            PROP.set((byte)(NLPStore.FREE_FALSE | value.type), LTK_STORE.put(key), propValue, propId,
-                    ID_NULL);
-
-            propId = PROP_STORE.put(PROP_EBI, PROP);
+            NODE_STORE.put(nodeId, NODE);
         }
     }
 

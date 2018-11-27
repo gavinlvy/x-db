@@ -24,6 +24,7 @@ import com.dameng.xdb.se.driver.msg.MSG;
 import com.dameng.xdb.se.driver.msg.PUT;
 import com.dameng.xdb.se.driver.msg.REMOVE;
 import com.dameng.xdb.se.driver.msg.SET;
+import com.dameng.xdb.se.driver.msg.SHOW;
 import com.dameng.xdb.se.model.Link;
 import com.dameng.xdb.se.model.Node;
 import com.dameng.xdb.se.nse.Storage;
@@ -164,6 +165,9 @@ public class Processor extends Thread
             case MSG.COMMAND_REMOVE:
                 msg = new REMOVE.S(buffer, session.encoding);
                 break;
+            case MSG.COMMAND_SHOW:
+                msg = new SHOW.S(buffer, session.encoding);
+                break;
             default:
                 msg = new DUMMY.S(buffer, session.encoding);
                 break;
@@ -190,6 +194,9 @@ public class Processor extends Thread
                 break;
             case MSG.COMMAND_REMOVE:
                 remove();
+                break;
+            case MSG.COMMAND_SHOW:
+                show();
                 break;
             default:
                 dummy();
@@ -229,6 +236,12 @@ public class Processor extends Thread
         REMOVE.S msg = (REMOVE.S)this.msg;
 
         msg.rets = msg.node ? storage.removeNode(msg.ids) : storage.removeLink(msg.ids);
+    }
+
+    private void show()
+    {
+        SHOW.S msg = (SHOW.S)this.msg;
+        msg.objs = msg.node ? storage.showNodes(msg.count) : storage.showLinks(msg.count);
     }
 
     private void dummy()

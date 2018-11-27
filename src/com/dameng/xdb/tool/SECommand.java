@@ -30,6 +30,7 @@ import com.dameng.xdb.stmt.SELogout;
 import com.dameng.xdb.stmt.SEPut;
 import com.dameng.xdb.stmt.SERemove;
 import com.dameng.xdb.stmt.SESet;
+import com.dameng.xdb.stmt.SEShow;
 import com.dameng.xdb.stmt.Statement;
 import com.dameng.xdb.util.MiscUtil;
 import com.dameng.xdb.util.StringUtil;
@@ -102,6 +103,9 @@ public class SECommand
                         case Statement.TYPE_SE_SET:
                             set((SESet)stmt);
                             break;
+                        case Statement.TYPE_SE_SHOW:
+                            show((SEShow)stmt);
+                            break;
                         case Statement.TYPE_SE_EXIT:
                             exit((SEExit)stmt);
                             break exit;
@@ -144,6 +148,7 @@ public class SECommand
         parser.removeErrorListeners();
         parser.addErrorListener(DescriptiveErrorListener.INSTANCE);
         //                 parser.setTrace(true);
+        parser.setBuildParseTree(false);
         parser.xdb();
         return parser.stmtList;
     }
@@ -276,6 +281,29 @@ public class SECommand
         for (boolean ret : rets)
         {
             System.out.println(ret);
+        }
+    }
+
+    private void show(SEShow show)
+    {
+        if (!checkLogin())
+        {
+            return;
+        }
+
+        GObject<?>[] objs = null;
+        if (show.node)
+        {
+            objs = conn.showNodes(show.count);
+        }
+        else
+        {
+            objs = conn.showLinks(show.count);
+        }
+
+        for (Object obj : objs)
+        {
+            System.out.println(obj);
         }
     }
 

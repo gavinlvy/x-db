@@ -28,8 +28,12 @@ public interface IStorage
     boolean[] removeNode(int[] ids);
 
     boolean[] removeLink(int[] ids);
-    
+
     boolean[] setNode(Node[] nodes);
-    
+
     boolean[] setLink(Link[] links);
+
+    Node[] showNodes(int count);
+
+    Link[] showLinks(int count);
 }

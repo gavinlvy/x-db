@@ -20,6 +20,7 @@ import com.dameng.xdb.se.driver.msg.MSG;
 import com.dameng.xdb.se.driver.msg.PUT;
 import com.dameng.xdb.se.driver.msg.REMOVE;
 import com.dameng.xdb.se.driver.msg.SET;
+import com.dameng.xdb.se.driver.msg.SHOW;
 import com.dameng.xdb.se.model.GObject;
 import com.dameng.xdb.util.MiscUtil;
 import com.dameng.xdb.util.buffer.Buffer;
@@ -102,6 +103,13 @@ public class XDBAccess
         SET msg = new SET.C(this, node, objs);
         access(msg);
         return msg.rets;
+    }
+    
+    public GObject<?>[] show(boolean node, int count)
+    {
+        SHOW msg = new SHOW.C(this, node, count);
+        access(msg);
+        return msg.objs;
     }
     
     private void access(MSG msg)

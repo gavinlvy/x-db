@@ -105,9 +105,9 @@ public class XDBTester
     public static void testNLP()
     {
         long start = System.currentTimeMillis();
-        NLPStore store1 = new NLPStore((byte)9, (byte)10, (byte)13, 17);
-        NLPStore store2 = new NLPStore((byte)9, (byte)10, (byte)13, 9);
-        NLPStore store3 = new NLPStore((byte)9, (byte)10, (byte)13, 33);
+        NLPStore store1 = new NLPStore((byte)9, (byte)10, (byte)13);
+        NLPStore store2 = new NLPStore((byte)9, (byte)10, (byte)13);
+        NLPStore store3 = new NLPStore((byte)9, (byte)10, (byte)13);
         System.out.println("escape: " + (System.currentTimeMillis() - start));
     }
 

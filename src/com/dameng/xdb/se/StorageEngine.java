@@ -13,6 +13,7 @@ import java.util.Scanner;
 import org.apache.log4j.Logger;
 
 import com.dameng.xdb.XDB;
+import com.dameng.xdb.se.nse.Storage;
 import com.dameng.xdb.util.StringUtil;
 
 /**
@@ -77,6 +78,15 @@ public class StorageEngine
                     break;
                 case "config":
                     System.out.println(XDB.config());
+                    break;
+                case "node.store":
+                    System.out.println(Storage.NODE_STORE);
+                    break;
+                case "link.store":
+                    System.out.println(Storage.LINK_STORE);
+                    break;
+                case "prop.store":
+                    System.out.println(Storage.PROP_STORE);
                     break;
                 default:
                     System.out.println("Invalid command!");

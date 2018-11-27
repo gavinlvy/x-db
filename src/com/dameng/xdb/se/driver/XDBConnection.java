@@ -123,4 +123,24 @@ public class XDBConnection implements Closeable
         
         return this.access.set(false, links);
     }
+    
+    public Node[] showNodes(int count)
+    {
+        if (count <= 0)
+        {
+            XDBException.SE_INVALID_PARAM.throwException();
+        }
+        
+        return (Node[])this.access.show(true, count);
+    }
+    
+    public Link[] showLinks(int count)
+    {
+        if (count <= 0)
+        {
+            XDBException.SE_INVALID_PARAM.throwException();
+        }
+        
+        return (Link[])this.access.show(false, count);
+    }
 }
