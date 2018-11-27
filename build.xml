@@ -13,6 +13,8 @@
 		<format property="build_date" pattern="yyyy-MM-dd" locale="en" />
 	</tstamp>
 
+	<mkdir dir="${xdb.build.dir}" />
+	
 	<delete includeEmptyDirs="true">
 	  <fileset dir="${xdb.build.dir}" includes="**/*" defaultexcludes="no"/>
 	</delete>
