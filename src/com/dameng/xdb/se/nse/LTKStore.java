@@ -34,7 +34,25 @@ public class LTKStore
         array.add(StringUtil.EMPTY); // id 0 is reserved, used as id null.
     }
     
-    public int put(String value)
+    public String read(int id)
+    {
+        try
+        {
+            lock.readLock().lock();
+
+            if (id < 0 || id >= array.size())
+            {
+                return null;
+            }
+            return array.get(id);
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    public int write(String value)
     {
         try
         {
@@ -52,43 +70,6 @@ public class LTKStore
         finally
         {
             lock.writeLock().unlock();
-        }
-    }
-
-    public int getId(String value)
-    {
-        try
-        {
-            lock.readLock().lock();
-
-            Integer id = map.get(value);
-            if (id == null)
-            {
-                id = -1;
-            }
-            return id;
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    public String getValue(int id)
-    {
-        try
-        {
-            lock.readLock().lock();
-
-            if (id < 0 || id >= array.size())
-            {
-                return null;
-            }
-            return array.get(id);
-        }
-        finally
-        {
-            lock.readLock().unlock();
         }
     }
 }

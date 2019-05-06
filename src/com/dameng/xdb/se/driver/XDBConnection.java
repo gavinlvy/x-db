@@ -143,4 +143,19 @@ public class XDBConnection implements Closeable
         
         return (Link[])this.access.show(false, count);
     }
+    
+    public void setAutoCommit(boolean autoCommit)
+    {
+        // TODO
+    }
+
+    public void commit()
+    {
+        // TODO
+    }
+
+    public void rollback()
+    {
+        // TODO
+    }
 }

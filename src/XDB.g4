@@ -66,6 +66,7 @@ options {
 	import com.dameng.xdb.stmt.SERemove;
 	import com.dameng.xdb.stmt.SESet;
 	import com.dameng.xdb.stmt.SEShow;
+	import com.dameng.xdb.stmt.SEHelp;
 	import com.dameng.xdb.stmt.Statement;
 }
 
@@ -108,6 +109,11 @@ se_stmt returns [Statement ret]
 	| KW_EXIT
 	{
 		$ret = new SEExit();
+	}
+
+	| KW_HELP
+	{
+		$ret = new SEHelp();
 	}
 
 	| KW_PUT KW_NODE '(' categorys ')' '{' properties '}' end
@@ -175,12 +181,12 @@ se_stmt returns [Statement ret]
 		$ret = new SERemove(false, $obj_ids.ret);
 	}
 
-	| KW_SHOW KW_NODE lt_numberic end
+	| KW_SHOW KW_NODE KW_TOP lt_numberic end
 	{
 		$ret = new SEShow(true, $lt_numberic.ret.intValue());
 	}
 
-	| KW_SHOW KW_LINK lt_numberic end
+	| KW_SHOW KW_LINK KW_TOP lt_numberic end
 	{
 		$ret = new SEShow(false, $lt_numberic.ret.intValue());
 	}
@@ -392,6 +398,11 @@ lt_boolean returns [Boolean ret]
 ;
 
 /*=========================LEXER_RULE=========================*/
+KW_HELP
+:
+	H E L P
+;
+
 KW_LOGIN
 :
 	L O G I N
@@ -440,6 +451,11 @@ KW_NODE
 KW_LINK
 :
 	L I N K
+;
+
+KW_TOP
+:
+	T O P
 ;
 
 /*---------------*/

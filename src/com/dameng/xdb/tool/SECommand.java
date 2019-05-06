@@ -25,6 +25,7 @@ import com.dameng.xdb.se.model.Link;
 import com.dameng.xdb.se.model.Node;
 import com.dameng.xdb.stmt.SEExit;
 import com.dameng.xdb.stmt.SEGet;
+import com.dameng.xdb.stmt.SEHelp;
 import com.dameng.xdb.stmt.SELogin;
 import com.dameng.xdb.stmt.SELogout;
 import com.dameng.xdb.stmt.SEPut;
@@ -109,6 +110,9 @@ public class SECommand
                         case Statement.TYPE_SE_EXIT:
                             exit((SEExit)stmt);
                             break exit;
+                        case Statement.TYPE_SE_HELP:
+                            help((SEHelp)stmt);
+                            break;
                         default:
                             break;
                     }
@@ -310,6 +314,29 @@ public class SECommand
     private void exit(SEExit exit)
     {
         System.exit(0);
+    }
+    
+    private void help(SEHelp help)
+    {
+        StringBuilder helpInfo = new StringBuilder();
+        helpInfo.append("\nUsage:");
+        helpInfo.append("\n----------------------------------------------------------");
+        helpInfo.append("\n- login HOST:PORT                                        -");
+        helpInfo.append("\n- put node(CATEGORYS) { PROPERTIES }                     -");
+        helpInfo.append("\n- put link(FNODE_ID, TNODE_ID, CATEGORYS) { PROPERTIES } -");
+        helpInfo.append("\n- get node(IDS)                                          -");
+        helpInfo.append("\n- get link(IDS)                                          -");
+        helpInfo.append("\n- set node(ID, CATEGORYS) { PROPERTIES }                 -");
+        helpInfo.append("\n- set link(ID, CATEGORYS) { PROPERTIES }                 -");
+        helpInfo.append("\n- remove node(IDS)                                       -");
+        helpInfo.append("\n- remove link(IDS)                                       -");
+        helpInfo.append("\n- show node top NUMBER                                   -");
+        helpInfo.append("\n- show link top NUMBER                                   -");
+        helpInfo.append("\n- logout                                                 -");
+        helpInfo.append("\n- help                                                   -");
+        helpInfo.append("\n- exit                                                   -");
+        helpInfo.append("\n----------------------------------------------------------\n");
+        System.out.println(helpInfo);
     }
 
     public static void main(String[] args) throws IOException

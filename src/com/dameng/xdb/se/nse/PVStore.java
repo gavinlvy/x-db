@@ -26,7 +26,21 @@ public class PVStore
 
     private AtomicLong id = new AtomicLong(System.currentTimeMillis());
 
-    public long put(String value)
+    public String read(long id)
+    {
+        try
+        {
+            lock.readLock().lock();
+
+            return map.get(id);
+        }
+        finally
+        {
+            lock.readLock().unlock();
+        }
+    }
+    
+    public long write(String value)
     {
         long id = this.id.getAndIncrement();
 
@@ -44,21 +58,7 @@ public class PVStore
         }
     }
 
-    public String get(long id)
-    {
-        try
-        {
-            lock.readLock().lock();
-
-            return map.get(id);
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
-    }
-
-    public String remove(long id)
+    public String free(long id)
     {
         try
         {

@@ -2,8 +2,7 @@
 * concurrent protect 
 * transaction ACID
 * free store space reuse
-* save to file
-
+* save to file (pv save to BTree)
 * cluster
 --------------------
 login localhost:3721
@@ -37,6 +36,70 @@ put node('person') {name:'ychao'};
 put node('person') {name:'zpjin'};
 put node('person') {name:'mumu'};
 put link(486539266, 486539268, 'FATHER') {START: '2015-04-23'}
+
+
+---------------------
+图存实现的思考
+
+现阶段考虑的两种实现方式
+
+1 原生图存实现
+#nlp.store
++--------+
+|  HEAD  |
+|--------|    +-------+
+| EXTENT | => | HEAD  |
+|--------|    |-------|   
+|   ...  |    | BLOCK | => +------+
+|--------|    |-------|    | HEAD |
+| EXTENT |    |  ...  |    |------|
++--------+    |-------|    | ITEM |
+              | BLOCK |    |------|
+              +-------+    | ...  |
+                           |------|
+                           | ITEM |
+                           +------+
+ITEM
+ |
+ |-NODE: info(1) + prop(4) + link(4) #9Bytes
+ |-LINE: info(1) + prop(4) + fnode(4) + tnode(4) + fnode_prev(4) + fnode_next(4) + tnode_prev(4) + tnode_next(4) #29Bytes
+ |-PROP: info(1) + prop_key(4) + prop_value(8) + next_prop(4) + nl(4) #21Bytes
+ 
+#ltk.store
+        +---------+       
+     +--|name | id|--+    
+     |  +---------+  |    
+     |       ^       |    
+     v       |       v    
+ +---------+ | +---------+
+ |name | id| | |name | id|
+ +---------+ | +---------+
+     ^       |       ^    
+     |       |       |    
+ +-----------------------+
+ | 0xabc | 0xabc | 0xabc |
+ +-----------------------+
+ 
+#pv.store
+        +---------+       
+     +--|id |value|--+    
+     |  +---------+  |    
+     |               |    
+     v               v    
+ +---------+   +---------+
+ |id |value|   |id |value|
+ +---------+   +---------+
+
+优缺点：
+逻辑清晰存储实现简单；
+数据相对较分散并发控制不好实现；
+集群扩展能力弱；
+
+
+
+
+2 关系数据库实现
+graphy -> schema
 
 
 

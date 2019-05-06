@@ -31,7 +31,7 @@ public class XDB
 
     public final static int SRC_NUM = 4123;
 
-    public final static String BUILD_TS = "2018.09.07";
+    public final static String BUILD_TS = "2018.12.14";
 
     public final static Series SERIES = Series.DEV;
 
@@ -70,11 +70,6 @@ public class XDB
 
     @SuppressWarnings ("rawtypes")
     public final static List<ConfigItem> CONFIGS = new ArrayList<>();
-
-    public static String config()
-    {
-        return CONFIGS.toString();
-    }
 
     public static class ConfigItem<T>
     {

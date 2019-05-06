@@ -43,17 +43,40 @@ public class Storage implements IStorage
 
     private final static int ID_NULL = 0;
 
+    private final int[] NODE_EBI, LINK_EBI, PROP_EBI; // record the session bind extent, and for array cache, used by 'put' only
+
     private Session session;
 
-    private final int[] NODE_EBI, LINK_EBI, PROP_EBI; // record the session bind extent, and for array cache, used by 'put' only
+    private boolean autoCommit;
 
     public Storage(Session session)
     {
         this.session = session;
+        this.autoCommit = true;
 
         this.NODE_EBI = new int[] {(int)(this.session.id % NODE_STORE.EXTENTS), 0, 0};
         this.LINK_EBI = new int[] {(int)(this.session.id % LINK_STORE.EXTENTS), 0, 0};
         this.PROP_EBI = new int[] {(int)(this.session.id % PROP_STORE.EXTENTS), 0, 0};
+    }
+
+    public boolean getAutoCommit()
+    {
+        return autoCommit;
+    }
+
+    public void setAutoCommit(boolean autoCommit)
+    {
+        this.autoCommit = autoCommit;
+    }
+
+    public void commit()
+    {
+        // TODO
+    }
+
+    public void rollback()
+    {
+        // TODO
     }
 
     @Override
@@ -66,7 +89,7 @@ public class Storage implements IStorage
         {
             rets[i] = NODE_STORE.alloc(NODE_EBI);
             NODE.set(NLPStore.FREE_FALSE, putGObject(rets[i], nodes[i]), ID_NULL);
-            NODE_STORE.put(rets[i], NODE);
+            NODE_STORE.write(rets[i], NODE);
         }
 
         return rets;
@@ -81,13 +104,13 @@ public class Storage implements IStorage
         for (int i = 0; i < links.length; ++i)
         {
             final NLPStore.Node FNODE = new NLPStore.Node();
-            if (!NODE_STORE.get(links[i].fnode, FNODE))
+            if (!NODE_STORE.read(links[i].fnode, FNODE))
             {
                 XDBException.SE_NODE_NOT_EXISTS.throwException(String.valueOf(links[i].fnode));
             }
 
             final NLPStore.Node TNODE = new NLPStore.Node();
-            if (!NODE_STORE.get(links[i].tnode, TNODE))
+            if (!NODE_STORE.read(links[i].tnode, TNODE))
             {
                 XDBException.SE_NODE_NOT_EXISTS.throwException(String.valueOf(links[i].tnode));
             }
@@ -96,7 +119,7 @@ public class Storage implements IStorage
             LINK.set(NLPStore.FREE_FALSE, putGObject(rets[i], links[i]), links[i].fnode, links[i].tnode,
                     adjustLinkForLinkPut(links[i].fnode, FNODE, rets[i]), ID_NULL,
                     adjustLinkForLinkPut(links[i].tnode, TNODE, rets[i]), ID_NULL);
-            LINK_STORE.put(rets[i], LINK);
+            LINK_STORE.write(rets[i], LINK);
         }
 
         return rets;
@@ -110,7 +133,7 @@ public class Storage implements IStorage
         Node[] nodes = new Node[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            if (!NODE_STORE.get(ids[i], NODE))
+            if (!NODE_STORE.read(ids[i], NODE))
             {
                 nodes[i] = null;
                 continue;
@@ -133,7 +156,7 @@ public class Storage implements IStorage
         Link[] links = new Link[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            if (!LINK_STORE.get(ids[i], LINK))
+            if (!LINK_STORE.read(ids[i], LINK))
             {
                 links[i] = null;
                 continue;
@@ -158,7 +181,7 @@ public class Storage implements IStorage
         boolean[] rets = new boolean[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            rets[i] = NODE_STORE.remove(ids[i], NODE);
+            rets[i] = NODE_STORE.free(ids[i], NODE);
             if (!rets[i])
             {
                 continue;
@@ -171,7 +194,7 @@ public class Storage implements IStorage
             int linkId = NODE.link;
             while (linkId != ID_NULL)
             {
-                LINK_STORE.remove(linkId, LINK);
+                LINK_STORE.free(linkId, LINK);
                 removeGObject(LINK.prop);
                 if (LINK.fnode == ids[i])
                 {
@@ -197,7 +220,7 @@ public class Storage implements IStorage
         boolean[] rets = new boolean[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            rets[i] = LINK_STORE.remove(ids[i], LINK);
+            rets[i] = LINK_STORE.free(ids[i], LINK);
             if (!rets[i])
             {
                 continue;
@@ -222,7 +245,7 @@ public class Storage implements IStorage
         boolean[] rets = new boolean[nodes.length];
         for (int i = 0; i < rets.length; ++i)
         {
-            rets[i] = NODE_STORE.get(nodes[i].id, NODE);
+            rets[i] = NODE_STORE.read(nodes[i].id, NODE);
             if (!rets[i])
             {
                 continue;
@@ -235,7 +258,7 @@ public class Storage implements IStorage
 
             // set new props
             NODE.prop = putGObject(nodes[i].id, nodes[i]);
-            NODE_STORE.put(nodes[i].id, NODE);
+            NODE_STORE.write(nodes[i].id, NODE);
         }
 
         return rets;
@@ -249,7 +272,7 @@ public class Storage implements IStorage
         boolean[] rets = new boolean[links.length];
         for (int i = 0; i < rets.length; ++i)
         {
-            rets[i] = LINK_STORE.get(links[i].id, LINK);
+            rets[i] = LINK_STORE.read(links[i].id, LINK);
             if (!rets[i])
             {
                 continue;
@@ -260,7 +283,7 @@ public class Storage implements IStorage
 
             // set new props
             LINK.prop = putGObject(links[i].id, links[i]);
-            LINK_STORE.put(links[i].id, LINK);
+            LINK_STORE.write(links[i].id, LINK);
         }
 
         return rets;
@@ -310,9 +333,9 @@ public class Storage implements IStorage
         final NLPStore.Prop PROP = new NLPStore.Prop();
         for (int j = 0; j < obj.categorys.length; ++j)
         {
-            PROP.set(NLPStore.FREE_FALSE, ID_NULL, LTK_STORE.put(obj.categorys[j]), propId, id);
+            PROP.set(NLPStore.FREE_FALSE, ID_NULL, LTK_STORE.write(obj.categorys[j]), propId, id);
             propId = PROP_STORE.alloc(PROP_EBI);
-            PROP_STORE.put(propId, PROP);
+            PROP_STORE.write(propId, PROP);
         }
 
         // properties -> prop.store
@@ -337,13 +360,13 @@ public class Storage implements IStorage
                     propValue = (boolean)value.value ? 1 : 0;
                     break;
                 default:
-                    propValue = PV_STORE.put((String)value.value);
+                    propValue = PV_STORE.write((String)value.value);
                     break;
             }
 
-            PROP.set((byte)(NLPStore.FREE_FALSE | value.type), LTK_STORE.put(key), propValue, propId, id);
+            PROP.set((byte)(NLPStore.FREE_FALSE | value.type), LTK_STORE.write(key), propValue, propId, id);
             propId = PROP_STORE.alloc(PROP_EBI);
-            PROP_STORE.put(propId, PROP);
+            PROP_STORE.write(propId, PROP);
         }
 
         return propId;
@@ -356,26 +379,26 @@ public class Storage implements IStorage
         List<String> categoryList = new ArrayList<String>();
         do
         {
-            PROP_STORE.get(propId, PROP);
+            PROP_STORE.read(propId, PROP);
             if (PROP.key == ID_NULL)
             {
-                categoryList.add(LTK_STORE.getValue((int)PROP.value));
+                categoryList.add(LTK_STORE.read((int)PROP.value));
             }
             else
             {
                 switch (PROP.getValueType())
                 {
                     case PropValue.TYPE_NUMBERIC:
-                        obj.set(LTK_STORE.getValue(PROP.key), PROP.value);
+                        obj.set(LTK_STORE.read(PROP.key), PROP.value);
                         break;
                     case PropValue.TYPE_DECIMAL:
-                        obj.set(LTK_STORE.getValue(PROP.key), Double.longBitsToDouble(PROP.value));
+                        obj.set(LTK_STORE.read(PROP.key), Double.longBitsToDouble(PROP.value));
                         break;
                     case PropValue.TYPE_BOOLEAN:
-                        obj.set(LTK_STORE.getValue(PROP.key), PROP.value == 0 ? false : true);
+                        obj.set(LTK_STORE.read(PROP.key), PROP.value == 0 ? false : true);
                         break;
                     default:
-                        obj.set(LTK_STORE.getValue(PROP.key), PV_STORE.get(PROP.value));
+                        obj.set(LTK_STORE.read(PROP.key), PV_STORE.read(PROP.value));
                         break;
                 }
             }
@@ -390,10 +413,10 @@ public class Storage implements IStorage
         final NLPStore.Prop PROP = new NLPStore.Prop();
         while (propId != ID_NULL)
         {
-            PROP_STORE.remove(propId, PROP);
+            PROP_STORE.free(propId, PROP);
             if (PROP.getValueType() == PropValue.TYPE_STRING)
             {
-                PV_STORE.remove(PROP.value);
+                PV_STORE.free(PROP.value);
             }
             propId = PROP.next;
         }
@@ -405,7 +428,7 @@ public class Storage implements IStorage
         if (NODE.link == ID_NULL)
         {
             NODE.link = linkId;
-            NODE_STORE.put(nodeId, NODE);
+            NODE_STORE.write(nodeId, NODE);
             return ID_NULL;
         }
 
@@ -414,13 +437,13 @@ public class Storage implements IStorage
         final NLPStore.Link LINK = new NLPStore.Link();
         do
         {
-            LINK_STORE.get(adjustLinkId, LINK);
+            LINK_STORE.read(adjustLinkId, LINK);
             if (LINK.fnode == nodeId)
             {
                 if (LINK.fnodeNext == ID_NULL)
                 {
                     LINK.fnodeNext = linkId;
-                    LINK_STORE.put(adjustLinkId, LINK);
+                    LINK_STORE.write(adjustLinkId, LINK);
                     break;
                 }
                 else
@@ -433,7 +456,7 @@ public class Storage implements IStorage
                 if (LINK.tnodeNext == ID_NULL)
                 {
                     LINK.tnodeNext = linkId;
-                    LINK_STORE.put(adjustLinkId, LINK);
+                    LINK_STORE.write(adjustLinkId, LINK);
                     break;
                 }
                 else
@@ -455,7 +478,7 @@ public class Storage implements IStorage
         if (prev != ID_NULL)
         {
             NLPStore.Link link = new NLPStore.Link();
-            LINK_STORE.get(prev, link);
+            LINK_STORE.read(prev, link);
             if (link.fnode == LINK.fnode)
             {
                 link.fnodeNext = isfnode ? LINK.fnodeNext : LINK.tnodeNext;
@@ -464,7 +487,7 @@ public class Storage implements IStorage
             {
                 link.tnodeNext = isfnode ? LINK.fnodeNext : LINK.tnodeNext;
             }
-            LINK_STORE.put(prev, link);
+            LINK_STORE.write(prev, link);
         }
 
         // adjust next link
@@ -472,7 +495,7 @@ public class Storage implements IStorage
         if (next != ID_NULL)
         {
             NLPStore.Link link = new NLPStore.Link();
-            LINK_STORE.get(next, link);
+            LINK_STORE.read(next, link);
             if (link.fnode == LINK.fnode)
             {
                 link.fnodePrev = isfnode ? LINK.fnodePrev : LINK.tnodePrev;
@@ -481,16 +504,16 @@ public class Storage implements IStorage
             {
                 link.tnodePrev = isfnode ? LINK.fnodePrev : LINK.tnodePrev;
             }
-            LINK_STORE.put(LINK.fnodeNext, link);
+            LINK_STORE.write(LINK.fnodeNext, link);
         }
 
         // adjust node(remove link is the only one)
         if (prev == ID_NULL)
         {
             final NLPStore.Node NODE = new NLPStore.Node();
-            NODE_STORE.get(nodeId, NODE);
+            NODE_STORE.read(nodeId, NODE);
             NODE.link = next;
-            NODE_STORE.put(nodeId, NODE);
+            NODE_STORE.write(nodeId, NODE);
         }
     }
 

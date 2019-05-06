@@ -92,22 +92,22 @@ public class NLPStore
         return ebi;
     }
 
-    public void put(int id, StoreItem item)
+    public boolean read(int id, StoreItem item)
     {
         int[] ebi = id2ebi(id);
-        extents[ebi[0]].blocks[ebi[1]].put(ebi[2], item);
+        return extents[ebi[0]].blocks[ebi[1]].read(ebi[2], item);
+    }
+    
+    public void write(int id, StoreItem item)
+    {
+        int[] ebi = id2ebi(id);
+        extents[ebi[0]].blocks[ebi[1]].write(ebi[2], item);
     }
 
-    public boolean get(int id, StoreItem item)
+    public boolean free(int id, StoreItem item)
     {
         int[] ebi = id2ebi(id);
-        return extents[ebi[0]].blocks[ebi[1]].get(ebi[2], item);
-    }
-
-    public boolean remove(int id, StoreItem item)
-    {
-        int[] ebi = id2ebi(id);
-        return extents[ebi[0]].blocks[ebi[1]].remove(ebi[2], item);
+        return extents[ebi[0]].blocks[ebi[1]].free(ebi[2], item);
     }
 
     public int alloc(int[] ebi)
@@ -157,7 +157,7 @@ public class NLPStore
                     Block block = extent.blocks[b];
                     for (int i = 0; i < block.offset; ++i)
                     {
-                        block.get(i, item);
+                        block.read(i, item);
                         if (item.isFree())
                         {
                             continue;
@@ -243,26 +243,7 @@ public class NLPStore
             return offset == 0 ? "-" : String.valueOf(offset);
         }
 
-        public void put(int i, StoreItem item)
-        {
-            try
-            {
-                lock.writeLock().lock();
-
-                if (bytes == null)
-                {
-                    bytes = new byte[ITEMS * item.length()];
-                }
-
-                item.encode(bytes, i * item.length());
-            }
-            finally
-            {
-                lock.writeLock().unlock();
-            }
-        }
-
-        public boolean get(int i, StoreItem item)
+        public boolean read(int i, StoreItem item)
         {
             try
             {
@@ -284,8 +265,27 @@ public class NLPStore
                 lock.readLock().unlock();
             }
         }
+        
+        public void write(int i, StoreItem item)
+        {
+            try
+            {
+                lock.writeLock().lock();
 
-        public boolean remove(int i, StoreItem item)
+                if (bytes == null)
+                {
+                    bytes = new byte[ITEMS * item.length()];
+                }
+
+                item.encode(bytes, i * item.length());
+            }
+            finally
+            {
+                lock.writeLock().unlock();
+            }
+        }
+
+        public boolean free(int i, StoreItem item)
         {
             try
             {

@@ -17,6 +17,14 @@ import com.dameng.xdb.se.model.Node;
  */
 public interface IStorage
 {
+    boolean getAutoCommit();
+
+    void setAutoCommit(boolean autoCommit);
+
+    void commit();
+
+    void rollback();
+
     int[] putNodes(Node[] nodes);
 
     int[] putLinks(Link[] links);

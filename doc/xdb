@@ -127,5 +127,8 @@ SSD、NVM、3D XPoint。
 这个算是比较具体的技术方案，thrift做rpc性能高，protocol buffer用来做对象的序列化和反序列化，也是以性能高著称，而且可以跨平台、跨语言，后面实现是可以考虑借鉴；
 
 
-
+-----------------------------------
+NODE: info(1) + prop(4) + link(4) #9Bytes
+LINK: info(1) + prop(4) + from_node(4) + to_node(4) + from_node_prev(4) + from_node_next(4) + to_node_prev(4) + to_node_next(4) #29Bytes
+PROP: info(1) + prop_key(4) + prop_value(8) + next_prop(4) + nl(4) #21Bytes
 

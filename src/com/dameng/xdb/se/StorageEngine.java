@@ -70,14 +70,11 @@ public class StorageEngine
         {
             switch (StringUtil.trimToEmpty(scanner.next()).toLowerCase())
             {
-                case "exit":
-                    System.exit(0);
-                    break exit;
                 case "session":
                     System.out.println("sessions: " + Session.COUNTER.get());
                     break;
                 case "config":
-                    System.out.println(XDB.config());
+                    System.out.println(XDB.CONFIGS.toString());
                     break;
                 case "node.store":
                     System.out.println(Storage.NODE_STORE);
@@ -88,6 +85,9 @@ public class StorageEngine
                 case "prop.store":
                     System.out.println(Storage.PROP_STORE);
                     break;
+                case "exit":
+                    System.exit(0);
+                    break exit;
                 default:
                     System.out.println("Invalid command!");
                     break;
