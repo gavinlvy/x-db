@@ -105,7 +105,7 @@ public class SECommand
                             set((SESet)stmt);
                             break;
                         case Statement.TYPE_SE_SHOW:
-                            show((SEShow)stmt);
+                            show((SEShow)stmt); 
                             break;
                         case Statement.TYPE_SE_EXIT:
                             exit((SEExit)stmt);
@@ -321,20 +321,20 @@ public class SECommand
         StringBuilder helpInfo = new StringBuilder();
         helpInfo.append("\nUsage:");
         helpInfo.append("\n----------------------------------------------------------");
-        helpInfo.append("\n- login HOST:PORT                                        -");
-        helpInfo.append("\n- put node(CATEGORYS) { PROPERTIES }                     -");
-        helpInfo.append("\n- put link(FNODE_ID, TNODE_ID, CATEGORYS) { PROPERTIES } -");
-        helpInfo.append("\n- get node(IDS)                                          -");
-        helpInfo.append("\n- get link(IDS)                                          -");
-        helpInfo.append("\n- set node(ID, CATEGORYS) { PROPERTIES }                 -");
-        helpInfo.append("\n- set link(ID, CATEGORYS) { PROPERTIES }                 -");
-        helpInfo.append("\n- remove node(IDS)                                       -");
-        helpInfo.append("\n- remove link(IDS)                                       -");
-        helpInfo.append("\n- show node top NUMBER                                   -");
-        helpInfo.append("\n- show link top NUMBER                                   -");
-        helpInfo.append("\n- logout                                                 -");
-        helpInfo.append("\n- help                                                   -");
-        helpInfo.append("\n- exit                                                   -");
+        helpInfo.append("\n- LOGIN [host:port[@user/password]]                      -");
+        helpInfo.append("\n- PUT NODE(categorys) { properties }                     -");
+        helpInfo.append("\n- PUT LINK(fnode_id, tnode_id, categorys) { properties } -");
+        helpInfo.append("\n- GET NODE(ids)                                          -");
+        helpInfo.append("\n- GET LINK(ids)                                          -");
+        helpInfo.append("\n- SET NODE(id, categorys) { properties }                 -");
+        helpInfo.append("\n- SET LINK(id, categorys) { properties }                 -");
+        helpInfo.append("\n- REMOVE NODE(ids)                                       -");
+        helpInfo.append("\n- REMOVE LINK(ids)                                       -");
+        helpInfo.append("\n- SHOW NODE TOP num                                      -");
+        helpInfo.append("\n- SHOW LINK TOP num                                      -");
+        helpInfo.append("\n- LOGOUT                                                 -");
+        helpInfo.append("\n- HELP                                                   -");
+        helpInfo.append("\n- EXIT                                                   -");
         helpInfo.append("\n----------------------------------------------------------\n");
         System.out.println(helpInfo);
     }

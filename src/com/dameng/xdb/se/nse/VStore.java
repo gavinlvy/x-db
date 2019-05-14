@@ -1,5 +1,5 @@
 /*
- * @(#)PVStore.java, 2018年10月10日 下午4:30:15
+ * @(#)VStore.java, 2018年10月10日 下午7:30:15
  *
  * Copyright (c) 2000-2018, 达梦数据库有限公司.
  * All rights reserved.
@@ -13,12 +13,12 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * used to store string property value  
+ * Property Value storage  
  *
  * @author ychao
  * @version $Revision: $, $Author: $, $Date: $
  */
-public class PVStore
+public class VStore extends Store
 {
     private ReadWriteLock lock = new ReentrantReadWriteLock();
 

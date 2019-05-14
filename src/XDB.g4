@@ -91,7 +91,12 @@ stmt
 
 se_stmt returns [Statement ret]
 :
-	KW_LOGIN host ':' port end
+	KW_LOGIN
+	{
+		$ret = new SELogin();
+	}
+	
+	| KW_LOGIN host ':' port end
 	{
 		$ret = new SELogin($host.ret, $port.ret);
 	}

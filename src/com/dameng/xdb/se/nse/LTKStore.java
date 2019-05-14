@@ -1,5 +1,5 @@
 /*
- * @(#)LTKStore.java, 2018年9月14日 下午5:06:09
+ * @(#)LTKStore.java, 2018年9月14日 下午7:06:09
  *
  * Copyright (c) 2000-2018, 达梦数据库有限公司.
  * All rights reserved.
@@ -16,12 +16,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.dameng.xdb.util.StringUtil;
 
 /**
- * used to store: node_label/link_type/property_key
+ * Label(Node)/Type(Link)/Key(Prop) storage
  * 
  * @author ychao
  * @version $Revision: $, $Author: $, $Date: $
  */
-public class LTKStore
+public class LTKStore extends Store
 {
     private ReadWriteLock lock = new ReentrantReadWriteLock();
 

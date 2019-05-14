@@ -12,7 +12,7 @@ node / link / property / node_label / link_type
 |-------|    +------+    |------|      |
 | BLOCK |                |  ..  |      |- [xxxx,xxxx] #free...
 +-------+                |------|      
-                         | NODE |      
+                         | NODE |       
                          +------+
 
 #link.store

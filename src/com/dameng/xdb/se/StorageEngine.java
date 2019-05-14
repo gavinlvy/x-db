@@ -1,5 +1,5 @@
 /*
- * @(#)XSE.java, 2018年9月7日 下午2:25:31
+ * @(#)StorageEngine.java, 2018年9月7日 下午2:25:31
  *
  * Copyright (c) 2000-2018, 达梦数据库有限公司.
  * All rights reserved.
@@ -77,13 +77,13 @@ public class StorageEngine
                     System.out.println(XDB.CONFIGS.toString());
                     break;
                 case "node.store":
-                    System.out.println(Storage.NODE_STORE);
+                    System.out.println(Storage.NSTORE);
                     break;
                 case "link.store":
-                    System.out.println(Storage.LINK_STORE);
+                    System.out.println(Storage.LSTORE);
                     break;
                 case "prop.store":
-                    System.out.println(Storage.PROP_STORE);
+                    System.out.println(Storage.PSTORE);
                     break;
                 case "exit":
                     System.exit(0);

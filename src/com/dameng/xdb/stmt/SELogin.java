@@ -6,6 +6,7 @@
  */
 package com.dameng.xdb.stmt;
 
+import com.dameng.xdb.XDB;
 import com.dameng.xdb.util.StringUtil;
 
 /**
@@ -17,22 +18,23 @@ import com.dameng.xdb.util.StringUtil;
 public class SELogin extends SEStatement
 {
     public String host;
-    
+
     public int port;
-    
+
     public String user;
-    
+
     public String password;
-    
+
+    public SELogin()
+    {
+        this("LOCALHOST", XDB.Config.SE_PORT.value);
+    }
+
     public SELogin(String host, int port)
     {
-        super(TYPE_SE_LOGIN, false);
-        this.host = host;
-        this.port = port;
-        this.user = StringUtil.EMPTY;
-        this.password = StringUtil.EMPTY;
+        this(host, port, StringUtil.EMPTY, StringUtil.EMPTY);
     }
-    
+
     public SELogin(String host, int port, String user, String password)
     {
         super(TYPE_SE_LOGIN, false);

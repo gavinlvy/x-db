@@ -17,31 +17,35 @@ import com.dameng.xdb.se.model.Node;
  */
 public interface IStorage
 {
-    boolean getAutoCommit();
+    public final static int ID_NULL = 0; // FIXME NSE & RDB
+    
+    public final static byte FREE_MASK = (byte)0x80;
 
-    void setAutoCommit(boolean autoCommit);
+    public final static byte FREE_TRUE = (byte)0x00;
 
-    void commit();
+    public final static byte FREE_FALSE = (byte)0x80;
 
-    void rollback();
+    public void initialize();
 
-    int[] putNodes(Node[] nodes);
+    public void destory();
 
-    int[] putLinks(Link[] links);
+    public int[] putNodes(Node[] nodes);
 
-    Node[] getNodes(int[] ids);
+    public int[] putLinks(Link[] links);
 
-    Link[] getLinks(int[] ids);
+    public Node[] getNodes(int[] ids);
 
-    boolean[] removeNode(int[] ids);
+    public Link[] getLinks(int[] ids);
 
-    boolean[] removeLink(int[] ids);
+    public boolean[] removeNode(int[] ids);
 
-    boolean[] setNode(Node[] nodes);
+    public boolean[] removeLink(int[] ids);
 
-    boolean[] setLink(Link[] links);
+    public boolean[] setNode(Node[] nodes);
 
-    Node[] showNodes(int count);
+    public boolean[] setLink(Link[] links);
 
-    Link[] showLinks(int count);
+    public Node[] showNodes(int count);
+
+    public Link[] showLinks(int count);
 }

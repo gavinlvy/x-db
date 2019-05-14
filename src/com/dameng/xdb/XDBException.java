@@ -48,8 +48,10 @@ public class XDBException extends RuntimeException
 
     public final static XDBException SE_SYNTEX_ERROR = new XDBException(1009, Messages.get("se.syntex_error"));
 
-    public final static XDBException SE_NODE_NOT_EXISTS = new XDBException(1010, Messages.get("se.node_not_exists"));
+    public final static XDBException SE_NSE_NODE_NOT_EXISTS = new XDBException(1010, Messages.get("se.node_not_exists"));
 
+    public final static XDBException SE_RDB_ACCESS_ERROR = new XDBException(1200, Messages.get("se.rdb_access_error"));
+    
     // PE
     public final static XDBException PE_COMMUNICATE_ERROR = new XDBException(1000,
             Messages.get("pe.communicate_error"));

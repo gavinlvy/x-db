@@ -8,7 +8,6 @@ package com.dameng.xdb.se;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -17,9 +16,9 @@ import org.apache.log4j.Logger;
 
 import com.dameng.xdb.XDB;
 import com.dameng.xdb.XDBException;
-import com.dameng.xdb.se.driver.msg.LOGIN;
 import com.dameng.xdb.se.driver.msg.DUMMY;
 import com.dameng.xdb.se.driver.msg.GET;
+import com.dameng.xdb.se.driver.msg.LOGIN;
 import com.dameng.xdb.se.driver.msg.MSG;
 import com.dameng.xdb.se.driver.msg.PUT;
 import com.dameng.xdb.se.driver.msg.REMOVE;
@@ -27,7 +26,6 @@ import com.dameng.xdb.se.driver.msg.SET;
 import com.dameng.xdb.se.driver.msg.SHOW;
 import com.dameng.xdb.se.model.Link;
 import com.dameng.xdb.se.model.Node;
-import com.dameng.xdb.se.nse.Storage;
 import com.dameng.xdb.util.MiscUtil;
 import com.dameng.xdb.util.buffer.Buffer;
 
@@ -39,7 +37,7 @@ import com.dameng.xdb.util.buffer.Buffer;
  */
 public class Processor extends Thread
 {
-    private Logger logger = Logger.getLogger(getClass());
+    private final static Logger LOGGER = Logger.getLogger(Processor.class);
 
     private Socket socket;
 
@@ -51,45 +49,44 @@ public class Processor extends Thread
 
     private MSG msg;
 
-    private Session session;
+    public Session session;
 
-    private IStorage storage;
+    public IStorage storage;
 
     public Processor(Socket socket)
     {
         this.socket = socket;
     }
 
-    private void initialize() throws IOException
+    public void initialize() throws Exception
     {
-        this.is = new BufferedInputStream(socket.getInputStream(), MSG.NET_PACKET_SIZE);
-        this.os = new BufferedOutputStream(socket.getOutputStream(), MSG.NET_PACKET_SIZE);
+        this.is = new BufferedInputStream(this.socket.getInputStream(), MSG.NET_PACKET_SIZE);
+        this.os = new BufferedOutputStream(this.socket.getOutputStream(), MSG.NET_PACKET_SIZE);
 
         this.buffer = Buffer.allocateBytes(MSG.NET_PACKET_SIZE);
 
         this.session = new Session();
 
-        this.storage = new Storage(this.session);
+        this.storage = XDB.Config.SE_MODE.value == 1 ? new com.dameng.xdb.se.rdb.Storage(this)
+                : new com.dameng.xdb.se.nse.Storage(this);
+        this.storage.initialize();
     }
 
-    private void destory()
+    public void destory()
     {
-        MiscUtil.close(is);
-        MiscUtil.close(os);
-        MiscUtil.close(socket);
+        MiscUtil.close(this.is);
+        MiscUtil.close(this.os);
+        MiscUtil.close(this.socket);
 
-        buffer = null;
+        this.buffer = null;
 
-        if (session != null)
-        {
-            session.destory();
-        }
+        this.storage.destory();
     }
 
     @Override
     public void run()
     {
-        logger.info("Processor start for [" + socket.getRemoteSocketAddress() + "]...");
+        LOGGER.info("Processor start for [" + socket.getRemoteSocketAddress() + "]...");
 
         try
         {
@@ -98,78 +95,75 @@ public class Processor extends Thread
             while (true)
             {
                 // receive
-                buffer.clear();
-                buffer.load(is, MSG.HEAD_LENGTH);
-                int length = buffer.getInt(MSG.OFFSET_LENGTH);
+                this.buffer.clear();
+                this.buffer.load(this.is, MSG.HEAD_LENGTH);
+                int length = this.buffer.getInt(MSG.OFFSET_LENGTH);
                 if (length > 0)
                 {
-                    buffer.load(is, length);
+                    this.buffer.load(this.is, length);
                 }
 
                 // process
-                byte command = buffer.getByte(MSG.OFFSET_COMMAND);
-                msg = getMsg(command);
-                msg.decode();
+                this.msg = createMsg(this.buffer.getByte(MSG.OFFSET_COMMAND));
+                this.msg.decode();
                 try
                 {
                     process();
                 }
                 catch (Throwable t)
                 {
-                    logger.info("Processor error!", t);
-                    msg.exception = t instanceof XDBException ? (XDBException)t
+                    LOGGER.info("Processor error!", t);
+                    this.msg.exception = t instanceof XDBException ? (XDBException)t
                             : XDBException.SE_PROCESS_ERROR;
                 }
                 finally
                 {
-                    msg.encode();
+                    this.msg.encode();
                 }
 
                 // send
-                buffer.flip();
-                buffer.flush(os);
+                this.buffer.flip();
+                this.buffer.flush(this.os);
             }
         }
-        catch (IOException e)
-        {}
         catch (Throwable t)
         {
-            logger.info("Processor run over!", t);
+            LOGGER.error("Process exception!", t);
         }
         finally
         {
-            logger.info("Processor over for [" + socket.getRemoteSocketAddress() + "].");
+            LOGGER.info("Processor over for [" + this.socket.getRemoteSocketAddress() + "].");
 
             destory();
         }
     }
 
-    private MSG getMsg(byte command)
+    private MSG createMsg(byte command)
     {
         MSG msg = null;
 
         switch (command)
         {
             case MSG.COMMAND_CONNECT:
-                msg = new LOGIN.S(buffer);
+                msg = new LOGIN.S(this.buffer);
                 break;
             case MSG.COMMAND_PUT:
-                msg = new PUT.S(buffer, session.encoding);
+                msg = new PUT.S(this.buffer, this.session.encoding);
                 break;
             case MSG.COMMAND_GET:
-                msg = new GET.S(buffer, session.encoding);
+                msg = new GET.S(this.buffer, this.session.encoding);
                 break;
             case MSG.COMMAND_SET:
-                msg = new SET.S(buffer, session.encoding);
+                msg = new SET.S(this.buffer, this.session.encoding);
                 break;
             case MSG.COMMAND_REMOVE:
-                msg = new REMOVE.S(buffer, session.encoding);
+                msg = new REMOVE.S(this.buffer, this.session.encoding);
                 break;
             case MSG.COMMAND_SHOW:
-                msg = new SHOW.S(buffer, session.encoding);
+                msg = new SHOW.S(this.buffer, this.session.encoding);
                 break;
             default:
-                msg = new DUMMY.S(buffer, session.encoding);
+                msg = new DUMMY.S(this.buffer, this.session.encoding);
                 break;
         }
 
@@ -178,7 +172,7 @@ public class Processor extends Thread
 
     private void process()
     {
-        switch (buffer.getByte(MSG.OFFSET_COMMAND))
+        switch (this.buffer.getByte(MSG.OFFSET_COMMAND))
         {
             case MSG.COMMAND_CONNECT:
                 connect();
@@ -246,6 +240,6 @@ public class Processor extends Thread
 
     private void dummy()
     {
-        msg.exception = XDBException.SE_MSG_COMMAND_INVALID;
+        this.msg.exception = XDBException.SE_MSG_COMMAND_INVALID;
     }
 }

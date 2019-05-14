@@ -25,4 +25,14 @@ public class MiscUtil
         catch (Exception e)
         {}
     }
+    
+    public static void close(AutoCloseable obj)
+    {
+        try
+        {
+            obj.close();
+        }
+        catch (Exception e)
+        {}
+    }
 }

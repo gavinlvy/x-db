@@ -31,7 +31,7 @@ public class XDB
 
     public final static int SRC_NUM = 4123;
 
-    public final static String BUILD_TS = "2018.12.14";
+    public final static String BUILD_TS = "2019.4.14";
 
     public final static Series SERIES = Series.DEV;
 
@@ -69,59 +69,35 @@ public class XDB
     }
 
     @SuppressWarnings ("rawtypes")
-    public final static List<ConfigItem> CONFIGS = new ArrayList<>();
-
-    public static class ConfigItem<T>
-    {
-        public String name;
-
-        public T value;
-
-        public ConfigItem(String name, T value)
-        {
-            this.name = name;
-            this.value = value;
-
-            CONFIGS.add(this);
-        }
-
-        private String value2String()
-        {
-            if (value == null)
-            {
-                return null;
-            }
-
-            if (value.getClass().isArray())
-            {
-                return Arrays.toString((Object[])value);
-            }
-
-            return value.toString();
-        }
-
-        @Override
-        public String toString()
-        {
-            return name + ": " + value2String();
-        }
-    }
+    public final static List<Config.ConfigItem> CONFIGS = new ArrayList<>();
 
     public static class Config
     {
         /*COMMON*/
         public final static ConfigItem<String> ENCODING = new ConfigItem<>("encoding", "utf-8");
 
-        /*SE configures*/
+        /*SE*/
         public final static ConfigItem<Integer> SE_PORT = new ConfigItem<>("se.port", 3721);
 
-        public final static ConfigItem<Byte[]> SE_EBI_BITS = new ConfigItem<>("se.ebi_bits",
-                new Byte[] {8, 10, 14}); // total 32bit, to generate gobj_id
+        public final static ConfigItem<Byte[]> SE_EBI_BITS = new ConfigItem<>("se.ebi_bits", new Byte[] {8,
+                10, 14}); // total 32bit, to generate gobj_id
 
-        /*PE configures*/
+        public final static ConfigItem<Integer> SE_MODE = new ConfigItem<>("se.mode", 0);
+
+        public final static ConfigItem<String> SE_RDB_DRIVER = new ConfigItem<>("se.rdb_driver",
+                "dm.jdbc.driver.DmDriver");
+
+        public final static ConfigItem<String> SE_RDB_URL = new ConfigItem<>("se.rdb_url",
+                "jdbc:dm://localhost:5236");
+
+        public final static ConfigItem<String> SE_RDB_USER = new ConfigItem<>("se.rdb_user", "SYSDBA");
+
+        public final static ConfigItem<String> SE_RDB_PASSWORD = new ConfigItem<>("se.rdb_password", "SYSDBA");
+
+        /*PE*/
         public final static ConfigItem<Integer> PE_PORT = new ConfigItem<>("pe.port", 4728);
 
-        /*ME configures*/
+        /*ME*/
         public final static ConfigItem<Integer> ME_PORT = new ConfigItem<>("me.port", 5735);
 
         static
@@ -145,12 +121,12 @@ public class XDB
                     String key = StringUtil.trimToEmpty((String)k).toLowerCase();
                     String value = StringUtil.trimToEmpty((String)v);
 
-                    /*common*/
+                    /*COMMON*/
                     if (StringUtil.equalsIgnoreCase(key, ENCODING.name))
                     {
                         ENCODING.value = value;
                     }
-                    /*SE configures*/
+                    /*SE*/
                     else if (StringUtil.equalsIgnoreCase(key, SE_PORT.name))
                     {
                         SE_PORT.value = Integer.valueOf(value);
@@ -163,18 +139,74 @@ public class XDB
                             SE_EBI_BITS.value[i] = Byte.valueOf(bitStrs[i]);
                         }
                     }
-                    /*PE configures*/
+                    else if (StringUtil.equalsIgnoreCase(key, SE_MODE.name))
+                    {
+                        SE_MODE.value = Integer.valueOf(value);
+                    }
+                    else if (StringUtil.equalsIgnoreCase(key, SE_RDB_DRIVER.name))
+                    {
+                        SE_RDB_DRIVER.value = value;
+                    }
+                    else if (StringUtil.equalsIgnoreCase(key, SE_RDB_URL.name))
+                    {
+                        SE_RDB_URL.value = value;
+                    }
+                    else if (StringUtil.equalsIgnoreCase(key, SE_RDB_USER.name))
+                    {
+                        SE_RDB_USER.value = value;
+                    }
+                    else if (StringUtil.equalsIgnoreCase(key, SE_RDB_PASSWORD.name))
+                    {
+                        SE_RDB_PASSWORD.value = value;
+                    }
+                    /*PE*/
                     else if (StringUtil.equalsIgnoreCase(key, PE_PORT.name))
                     {
                         PE_PORT.value = Integer.valueOf(value);
                     }
-                    /*ME configures*/
+                    /*ME*/
                     else if (StringUtil.equalsIgnoreCase(key, ME_PORT.name))
                     {
                         ME_PORT.value = Integer.valueOf(value);
                     }
                 }
             });
+        }
+
+        public static class ConfigItem<T>
+        {
+            public String name;
+
+            public T value;
+
+            public ConfigItem(String name, T value)
+            {
+                this.name = name;
+                this.value = value;
+
+                CONFIGS.add(this);
+            }
+
+            private String value2String()
+            {
+                if (value == null)
+                {
+                    return null;
+                }
+
+                if (value.getClass().isArray())
+                {
+                    return Arrays.toString((Object[])value);
+                }
+
+                return value.toString();
+            }
+
+            @Override
+            public String toString()
+            {
+                return name + ": " + value2String();
+            }
         }
     }
 }
