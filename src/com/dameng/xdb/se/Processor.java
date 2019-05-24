@@ -112,7 +112,7 @@ public class Processor extends Thread
                 }
                 catch (Throwable t)
                 {
-                    LOGGER.info("Processor error!", t);
+                    LOGGER.error("Processor error!", t);
                     this.msg.exception = t instanceof XDBException ? (XDBException)t
                             : XDBException.SE_PROCESS_ERROR;
                 }

@@ -33,8 +33,8 @@ public class LTKStore extends Store
     {
         array.add(StringUtil.EMPTY); // id 0 is reserved, used as id null.
     }
-    
-    public String read(int id)
+
+    public String get(int id)
     {
         try
         {
@@ -51,8 +51,8 @@ public class LTKStore extends Store
             lock.readLock().unlock();
         }
     }
-    
-    public int write(String value)
+
+    public int put(String value)
     {
         try
         {

@@ -6,6 +6,15 @@
  */
 package com.dameng.xdb.se.rdb;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+
+import com.dameng.xdb.util.MiscUtil;
+
 /**
  * 在这里加入功能说明
  *
@@ -14,100 +23,131 @@ package com.dameng.xdb.se.rdb;
  */
 public class Store
 {
-    public void destory()
+    public final static AtomicLong ID = new AtomicLong(System.currentTimeMillis());
+
+    protected Connection connection;
+
+    protected PreparedStatement getStmt;
+
+    protected PreparedStatement putStmt;
+
+    protected PreparedStatement setStmt;
+
+    protected PreparedStatement removeStmt;
+
+    protected PreparedStatement showStmt;
+
+    public Store(Connection connection)
     {
-        // implements by subclass
+        this.connection = connection;
     }
 
-    public static class N
+    public void initialize() throws Exception
     {
-        public byte info;
+        // create database access statement
+    }
 
-        public int prop;
+    public void destory() throws Exception
+    {
+        // close database access statement
+    }
 
-        public int link;
-
-        public N fill(byte info, int prop, int link)
+    public boolean get(Item item) throws Exception
+    {
+        ResultSet rs = null;
+        try
         {
-            this.info = info;
-            this.prop = prop;
-            this.link = link;
-            return this;
+            item.encode(this.getStmt, Item.ENCODE_TYPE_READ);
+            rs = this.getStmt.executeQuery();
+            if (rs.next())
+            {
+                item.decode(rs);
+                return true;
+            }
+            return false;
+        }
+        finally
+        {
+            MiscUtil.close(rs);
         }
     }
 
-    public static class L
+    public int put(Item item) throws Exception
     {
-        public byte info;
-
-        public int prop;
-
-        public int fnode;
-
-        public int tnode;
-
-        public int fnode_prev;
-
-        public int fnode_next;
-
-        public int tnode_prev;
-
-        public int tnode_next;
-
-        public L fill(byte info, int prop, int fnode, int tnode, int fnode_prev, int fnode_next,
-                int tnode_prev, int tnode_next)
-        {
-            this.info = info;
-            this.prop = prop;
-            this.fnode = fnode;
-            this.tnode = tnode;
-            this.fnode_prev = fnode_prev;
-            this.fnode_next = fnode_next;
-            this.tnode_prev = tnode_prev;
-            this.tnode_next = tnode_next;
-            return this;
-        }
+        // TODO
+        item.id = (int)ID.getAndIncrement();
+        item.encode(this.putStmt, Item.ENCODE_TYPE_WRITE);
+        this.putStmt.executeUpdate();
+        return item.id;
     }
 
-    public static class P
+    public boolean set(Item item) throws Exception
     {
-        public byte info;
-
-        public int key;
-
-        public long value;
-
-        public int next;
-
-        public P fill(byte info, int key, long value, int next)
-        {
-            this.info = info;
-            this.key = key;
-            this.value = value;
-            this.next = next;
-            return this;
-        }
+        item.encode(this.setStmt, Item.ENCODE_TYPE_UPDATE);
+        return this.setStmt.executeUpdate() > 0;
     }
 
-    public static class V
+    public boolean remove(Item item) throws Exception
     {
-        public String value;
-
-        public V fill(String value)
-        {
-            this.value = value;
-            return this;
-        }
+        item.encode(this.removeStmt, Item.ENCODE_TYPE_REMOVE);
+        return this.removeStmt.executeUpdate() > 0;
     }
 
-    public static class LTK
+    /**
+     * count fill to item(id)
+     */
+    @SuppressWarnings ("unchecked")
+    public <T extends Item> List<T> show(T item) throws Exception
     {
-        public String value;
+        List<T> itemList = new ArrayList<>();
 
-        public LTK fill(String value)
+        item.encode(this.showStmt, Item.ENCODE_TYPE_SHOW);
+
+        ResultSet rs = null;
+        try
         {
-            this.value = value;
+            rs = this.showStmt.executeQuery();
+            while (rs.next())
+            {
+                itemList.add((T)item.clone().decode(rs));
+            }
+        }
+        finally
+        {
+            MiscUtil.close(rs);
+        }
+
+        return itemList;
+    }
+
+    public abstract static class Item implements Cloneable
+    {
+        public int id;
+
+        public final static int ENCODE_TYPE_READ = 1;
+
+        public final static int ENCODE_TYPE_WRITE = 2;
+
+        public final static int ENCODE_TYPE_UPDATE = 3;
+
+        public final static int ENCODE_TYPE_REMOVE = 4;
+
+        public final static int ENCODE_TYPE_SHOW = 5;
+
+        public Item fill(int id)
+        {
+            this.id = id;
             return this;
         }
+
+        @Override
+        protected Item clone() throws CloneNotSupportedException
+        {
+            return (Item)super.clone();
+        }
+
+        public abstract Item encode(PreparedStatement pstmt, int type) throws Exception;
+
+        public abstract Item decode(ResultSet rs) throws Exception;
     }
 }

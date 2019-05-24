@@ -11,8 +11,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.dameng.xdb.se.IStorage;
-import com.dameng.xdb.se.rdb.Store;
 import com.dameng.xdb.util.MiscUtil;
 
 /**
@@ -23,55 +21,126 @@ import com.dameng.xdb.util.MiscUtil;
  */
 public class LStore extends Store
 {
-    private PreparedStatement putStmt;
-
-    private PreparedStatement getStmt;
-
-    public LStore(Connection connection) throws SQLException
+    public LStore(Connection connection)
     {
-        this.putStmt = connection
-                .prepareStatement(
-                        "insert into rdb_link(info, prop, fnode, tnode, fnode_prev, fnode_next, tnode_prev, tnode_next) values(?, ?, ?, ?, ?, ?, ?, ?);",
-                        PreparedStatement.RETURN_GENERATED_KEYS);
-        this.getStmt = connection
-                .prepareStatement("select info, prop, fnode, tnode, fnode_prev, fnode_next, tnode_prev, tnode_next from rdb_link where rowid = ?");
+        super(connection);
     }
 
     @Override
-    public void destory()
+    public void initialize() throws Exception
+    {
+        super.initialize();
+
+        this.getStmt = this.connection
+                .prepareStatement("select id, info, prop, fnode, tnode, fnode_prev, fnode_next, tnode_prev, tnode_next from rdb_l where id = ?");
+        this.putStmt = this.connection
+                .prepareStatement("insert into rdb_l(id, info, prop, fnode, tnode, fnode_prev, fnode_next, tnode_prev, tnode_next) values(?, ?, ?, ?, ?, ?, ?, ?, ?);");
+        this.setStmt = this.connection
+                .prepareStatement("update rdb_l set info = ?, prop = ?, fnode = ?, tnode = ?, fnode_prev = ?, fnode_next = ?, tnode_prev = ?, tnode_next = ? where id = ?;");
+        this.removeStmt = this.connection.prepareStatement("delete from rdb_l where id = ?;");
+        this.showStmt = this.connection
+                .prepareStatement("select top ? id, info, prop, fnode, tnode, fnode_prev, fnode_next, tnode_prev, tnode_next from rdb_l;");
+    }
+
+    @Override
+    public void destory() throws Exception
     {
         super.destory();
 
-        MiscUtil.close(this.putStmt);
         MiscUtil.close(this.getStmt);
+        MiscUtil.close(this.putStmt);
+        MiscUtil.close(this.setStmt);
+        MiscUtil.close(this.removeStmt);
+        MiscUtil.close(this.showStmt);
     }
 
-    public boolean read(int id, L l)
+    public static class L extends Item
     {
-        // TODO
-        return false;
-    }
-    
-    public int write(L l) throws SQLException
-    {
-        int id = IStorage.ID_NULL;
+        public byte info;
 
-        this.putStmt.setByte(1, l.info);
-        this.putStmt.setInt(2, l.prop);
-        this.putStmt.setInt(3, l.fnode);
-        this.putStmt.setInt(4, l.tnode);
-        this.putStmt.setInt(5, l.fnode_prev);
-        this.putStmt.setInt(6, l.fnode_next);
-        this.putStmt.setInt(7, l.tnode_prev);
-        this.putStmt.setInt(8, l.tnode_next);
-        this.putStmt.executeUpdate();
-        ResultSet rs = this.putStmt.getGeneratedKeys();
-        if (rs.next())
+        public int prop;
+
+        public int fnode;
+
+        public int tnode;
+
+        public int fnode_prev;
+
+        public int fnode_next;
+
+        public int tnode_prev;
+
+        public int tnode_next;
+
+        public L fill(byte info, int prop, int fnode, int tnode, int fnode_prev, int fnode_next,
+                int tnode_prev, int tnode_next)
         {
-            id = rs.getInt(1);
+            this.info = info;
+            this.prop = prop;
+            this.fnode = fnode;
+            this.tnode = tnode;
+            this.fnode_prev = fnode_prev;
+            this.fnode_next = fnode_next;
+            this.tnode_prev = tnode_prev;
+            this.tnode_next = tnode_next;
+            return this;
         }
-        rs.close();
 
-        return id;
+        @Override
+        public Item encode(PreparedStatement pstmt, int type) throws SQLException
+        {
+            if (type == Item.ENCODE_TYPE_READ)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_WRITE)
+            {
+                pstmt.setInt(1, this.id);
+                pstmt.setByte(2, this.info);
+                pstmt.setInt(3, this.prop);
+                pstmt.setInt(4, this.fnode);
+                pstmt.setInt(5, this.tnode);
+                pstmt.setInt(6, this.fnode_prev);
+                pstmt.setInt(7, this.fnode_next);
+                pstmt.setInt(8, this.tnode_prev);
+                pstmt.setInt(9, this.tnode_next);
+            }
+            else if (type == Item.ENCODE_TYPE_UPDATE)
+            {
+                pstmt.setByte(1, this.info);
+                pstmt.setInt(2, this.prop);
+                pstmt.setInt(3, this.fnode);
+                pstmt.setInt(4, this.tnode);
+                pstmt.setInt(5, this.fnode_prev);
+                pstmt.setInt(6, this.fnode_next);
+                pstmt.setInt(7, this.tnode_prev);
+                pstmt.setInt(8, this.tnode_next);
+                pstmt.setInt(9, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_REMOVE)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_SHOW)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            return this;
+        }
+
+        @Override
+        public Item decode(ResultSet rs) throws SQLException
+        {
+            this.id = rs.getInt(1);
+            this.info = rs.getByte(2);
+            this.prop = rs.getInt(3);
+            this.fnode = rs.getInt(4);
+            this.tnode = rs.getInt(5);
+            this.fnode_prev = rs.getInt(6);
+            this.fnode_next = rs.getInt(7);
+            this.tnode_prev = rs.getInt(8);
+            this.tnode_next = rs.getInt(9);
+            return this;
+        }
     }
 }

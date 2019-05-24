@@ -77,13 +77,13 @@ public class StorageEngine
                     System.out.println(XDB.CONFIGS.toString());
                     break;
                 case "node.store":
-                    System.out.println(Storage.NSTORE);
+                    System.out.println(Storage.nstore);
                     break;
                 case "link.store":
-                    System.out.println(Storage.LSTORE);
+                    System.out.println(Storage.lstore);
                     break;
                 case "prop.store":
-                    System.out.println(Storage.PSTORE);
+                    System.out.println(Storage.pstore);
                     break;
                 case "exit":
                     System.exit(0);

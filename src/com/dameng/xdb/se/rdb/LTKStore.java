@@ -11,7 +11,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import com.dameng.xdb.se.IStorage;
 import com.dameng.xdb.util.MiscUtil;
 
 /**
@@ -22,39 +21,79 @@ import com.dameng.xdb.util.MiscUtil;
  */
 public class LTKStore extends Store
 {
-    private PreparedStatement putStmt;
-
-    private PreparedStatement getStmt;
-
-    public LTKStore(Connection connection) throws SQLException
+    public LTKStore(Connection connection)
     {
-        this.putStmt = connection.prepareStatement("insert into rdb_v(value) values(?);");
-        this.getStmt = connection.prepareStatement("select value from rdb_v where rowid = ?;");
+        super(connection);
     }
 
     @Override
-    public void destory()
+    public void initialize() throws Exception
+    {
+        super.initialize();
+
+        this.getStmt = this.connection.prepareStatement("select id, value from rdb_ltk where id = ?;");
+        this.putStmt = this.connection.prepareStatement("insert into rdb_ltk(id, value) values(?, ?);");
+        this.setStmt = this.connection.prepareStatement("update rdb_ltk set value = ? where id = ?;");
+        this.removeStmt = this.connection.prepareStatement("delete from rdb_ltk where id = ?;");
+        this.showStmt = this.connection.prepareStatement("select top ? id, value from rdb_ltk;");
+    }
+
+    @Override
+    public void destory() throws Exception
     {
         super.destory();
 
-        MiscUtil.close(this.putStmt);
         MiscUtil.close(this.getStmt);
+        MiscUtil.close(this.putStmt);
+        MiscUtil.close(this.setStmt);
+        MiscUtil.close(this.removeStmt);
+        MiscUtil.close(this.showStmt);
     }
 
-    public int put(String value) throws SQLException
+    public static class LTK extends Item
     {
-        // TODO
-        int id = IStorage.ID_NULL;
+        public String value;
 
-        this.putStmt.setString(1, value);
-        this.putStmt.executeUpdate();
-        ResultSet rs = this.putStmt.getGeneratedKeys();
-        if (rs.next())
+        public LTK fill(String value)
         {
-            id = rs.getInt(1);
+            this.value = value;
+            return this;
         }
-        rs.close();
 
-        return id;
+        @Override
+        public Item encode(PreparedStatement pstmt, int type) throws SQLException
+        {
+            if (type == Item.ENCODE_TYPE_READ)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_WRITE)
+            {
+                pstmt.setInt(1, this.id);
+                pstmt.setString(2, this.value);
+            }
+            else if (type == Item.ENCODE_TYPE_UPDATE)
+            {
+                pstmt.setString(1, this.value);
+                pstmt.setInt(2, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_REMOVE)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_SHOW)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            return this;
+        }
+
+        @Override
+        public Item decode(ResultSet rs) throws SQLException
+        {
+            this.id = rs.getInt(1);
+            this.value = rs.getString(2);
+            return this;
+        }
     }
 }

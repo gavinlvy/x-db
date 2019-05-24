@@ -26,7 +26,7 @@ public class VStore extends Store
 
     private AtomicLong id = new AtomicLong(System.currentTimeMillis());
 
-    public String read(long id)
+    public String get(long id)
     {
         try
         {
@@ -40,7 +40,7 @@ public class VStore extends Store
         }
     }
     
-    public long write(String value)
+    public long put(String value)
     {
         long id = this.id.getAndIncrement();
 
@@ -58,7 +58,7 @@ public class VStore extends Store
         }
     }
 
-    public String free(long id)
+    public String remove(long id)
     {
         try
         {

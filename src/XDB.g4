@@ -229,6 +229,7 @@ category returns [String ret]
 
 ;
 
+
 properties returns [Map<String, PropValue> ret] @init {
 	Map<String, PropValue> propMap = new HashMap<String, PropValue>();
 }

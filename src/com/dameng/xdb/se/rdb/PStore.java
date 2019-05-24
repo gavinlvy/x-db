@@ -22,49 +22,106 @@ import com.dameng.xdb.util.MiscUtil;
  */
 public class PStore extends Store
 {
-    private PreparedStatement putStmt;
-
-    private PreparedStatement getStmt;
-
-    public PStore(Connection connection) throws SQLException
+    public PStore(Connection connection)
     {
-        this.putStmt = connection
-                .prepareStatement("insert into rdb_prop(info, key, value, next) values(?, ?, ?, ?);");
-        this.getStmt = connection
-                .prepareStatement("select info, key, value, next from rdb_prop where rowid=?;");
+        super(connection);
     }
 
     @Override
-    public void destory()
+    public void initialize() throws Exception
+    {
+        super.initialize();
+
+        this.getStmt = this.connection
+                .prepareStatement("select id, info, key, value, \"NEXT\" from rdb_p where id=?;");
+        this.putStmt = this.connection
+                .prepareStatement("insert into rdb_p(id, info, key, value, \"NEXT\") values(?, ?, ?, ?, ?);");
+        this.setStmt = this.connection
+                .prepareStatement("update rdb_p set info = ?, key = ?, value = ?, \"NEXT\" = ? where id = ?;");
+        this.removeStmt = this.connection.prepareStatement("delete from rdb_p where id = ?;");
+        this.showStmt = this.connection
+                .prepareStatement("select top ? id, info, key, value, \"NEXT\" from rdb_p;");
+    }
+
+    @Override
+    public void destory() throws Exception
     {
         super.destory();
 
-        MiscUtil.close(this.putStmt);
         MiscUtil.close(this.getStmt);
+        MiscUtil.close(this.putStmt);
+        MiscUtil.close(this.setStmt);
+        MiscUtil.close(this.removeStmt);
+        MiscUtil.close(this.showStmt);
     }
 
-    public boolean read(int id, P p)
+    public static class P extends Item
     {
-        // TODO
-        return false;
-    }
-    
-    public int write(P p) throws SQLException
-    {
-        int id = IStorage.ID_NULL;
+        public byte info;
 
-        this.putStmt.setByte(1, p.info);
-        this.putStmt.setInt(2, p.key);
-        this.putStmt.setLong(3, p.value);
-        this.putStmt.setInt(4, p.next);
-        this.putStmt.executeUpdate();
-        ResultSet rs = this.putStmt.getGeneratedKeys();
-        if (rs.next())
+        public int key;
+
+        public long value;
+
+        public int next;
+
+        public P fill(byte info, int key, long value, int next)
         {
-            id = rs.getInt(1);
+            this.info = info;
+            this.key = key;
+            this.value = value;
+            this.next = next;
+            return this;
         }
-        rs.close();
 
-        return id;
+        public byte valueType()
+        {
+            return (byte)(this.info & IStorage.VALUE_TYPE_MASK);
+        }
+
+        @Override
+        public Item encode(PreparedStatement pstmt, int type) throws SQLException
+        {
+            if (type == Item.ENCODE_TYPE_READ)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_WRITE)
+            {
+                pstmt.setInt(1, this.id);
+                pstmt.setByte(2, this.info);
+                pstmt.setInt(3, this.key);
+                pstmt.setLong(4, this.value);
+                pstmt.setInt(5, this.next);
+            }
+            else if (type == Item.ENCODE_TYPE_UPDATE)
+            {
+                pstmt.setByte(1, this.info);
+                pstmt.setInt(2, this.key);
+                pstmt.setLong(3, this.value);
+                pstmt.setInt(4, this.next);
+                pstmt.setInt(5, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_REMOVE)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            else if (type == Item.ENCODE_TYPE_SHOW)
+            {
+                pstmt.setInt(1, this.id);
+            }
+            return this;
+        }
+
+        @Override
+        public Item decode(ResultSet rs) throws SQLException
+        {
+            this.id = rs.getInt(1);
+            this.info = rs.getByte(2);
+            this.key = rs.getInt(3);
+            this.value = rs.getLong(4);
+            this.next = rs.getInt(5);
+            return this;
+        }
     }
 }

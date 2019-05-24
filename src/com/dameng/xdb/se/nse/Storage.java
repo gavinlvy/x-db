@@ -28,18 +28,15 @@ import com.dameng.xdb.se.model.PropValue;
  */
 public class Storage implements IStorage
 {
-    public final static NLPStore NSTORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
-            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2]);
+    public static NLPStore nstore = new NLPStore();
 
-    public final static NLPStore LSTORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
-            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2]);
+    public static NLPStore lstore = new NLPStore();
 
-    public final static NLPStore PSTORE = new NLPStore(XDB.Config.SE_EBI_BITS.value[0],
-            XDB.Config.SE_EBI_BITS.value[1], XDB.Config.SE_EBI_BITS.value[2]);
+    public static NLPStore pstore = new NLPStore();
 
-    public final static VStore VSTORE = new VStore();
+    public static VStore vstore = new VStore();
 
-    public final static LTKStore LTKSTORE = new LTKStore();
+    public static LTKStore ltkstore = new LTKStore();
 
     private int[] nebi, lebi, pebi; // record the session bind extent, and for array cache, used by 'put' only
 
@@ -53,9 +50,11 @@ public class Storage implements IStorage
     @Override
     public void initialize()
     {
-        this.nebi = new int[] {(int)(processor.session.id % NSTORE.EXTENT_TOTAL), 0, 0};
-        this.lebi = new int[] {(int)(processor.session.id % LSTORE.EXTENT_TOTAL), 0, 0};
-        this.pebi = new int[] {(int)(processor.session.id % PSTORE.EXTENT_TOTAL), 0, 0};
+        int extentCapacity = (int)Math.pow(2, XDB.Config.SE_EBI_BITS.value[0]);
+
+        this.nebi = new int[] {(int)(processor.session.id % extentCapacity), 0, 0};
+        this.lebi = new int[] {(int)(processor.session.id % extentCapacity), 0, 0};
+        this.pebi = new int[] {(int)(processor.session.id % extentCapacity), 0, 0};
     }
 
     @Override
@@ -65,13 +64,13 @@ public class Storage implements IStorage
     @Override
     public int[] putNodes(Node[] nodes)
     {
-        Store.N n = new Store.N();
+        NLPStore.N n = new NLPStore.N();
 
         int[] rets = new int[nodes.length];
         for (int i = 0; i < nodes.length; ++i)
         {
-            rets[i] = NSTORE.alloc(nebi);
-            NSTORE.write(rets[i], n.fill(FREE_FALSE, putGObject(rets[i], nodes[i]), ID_NULL));
+            rets[i] = nstore.alloc(nebi);
+            nstore.put(rets[i], n.fill(FREE_FALSE, putGObject(nodes[i], rets[i]), ID_NULL));
         }
 
         return rets;
@@ -82,24 +81,24 @@ public class Storage implements IStorage
     {
         int[] rets = new int[links.length];
 
-        Store.L l = new Store.L();
-        Store.N fn = new Store.N();
-        Store.N tn = new Store.N();
+        NLPStore.L l = new NLPStore.L();
+        NLPStore.N fn = new NLPStore.N();
+        NLPStore.N tn = new NLPStore.N();
 
         for (int i = 0; i < links.length; ++i)
         {
-            if (!NSTORE.read(links[i].fnode, fn))
+            if (!nstore.get(links[i].fnode, fn))
             {
-                XDBException.SE_NSE_NODE_NOT_EXISTS.throwException(String.valueOf(links[i].fnode));
+                XDBException.SE_NODE_NOT_EXISTS.throwException(String.valueOf(links[i].fnode));
             }
 
-            if (!NSTORE.read(links[i].tnode, tn))
+            if (!nstore.get(links[i].tnode, tn))
             {
-                XDBException.SE_NSE_NODE_NOT_EXISTS.throwException(String.valueOf(links[i].tnode));
+                XDBException.SE_NODE_NOT_EXISTS.throwException(String.valueOf(links[i].tnode));
             }
 
-            rets[i] = LSTORE.alloc(lebi);
-            LSTORE.write(rets[i], l.fill(FREE_FALSE, putGObject(rets[i], links[i]), links[i].fnode,
+            rets[i] = lstore.alloc(lebi);
+            lstore.put(rets[i], l.fill(FREE_FALSE, putGObject(links[i], rets[i]), links[i].fnode,
                     links[i].tnode, adjustLinkForLinkPut(links[i].fnode, fn, rets[i]), ID_NULL,
                     adjustLinkForLinkPut(links[i].tnode, tn, rets[i]), ID_NULL));
         }
@@ -110,12 +109,12 @@ public class Storage implements IStorage
     @Override
     public Node[] getNodes(int[] ids)
     {
-        Store.N n = new Store.N();
+        NLPStore.N n = new NLPStore.N();
 
         Node[] nodes = new Node[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            if (!NSTORE.read(ids[i], n))
+            if (!nstore.get(ids[i], n))
             {
                 nodes[i] = null;
                 continue;
@@ -124,7 +123,7 @@ public class Storage implements IStorage
             nodes[i] = new Node(ids[i]);
             nodes[i].link = n.link;
 
-            getGObject(n.prop, nodes[i]);
+            getGObject(nodes[i], n.prop);
         }
 
         return nodes;
@@ -133,12 +132,12 @@ public class Storage implements IStorage
     @Override
     public Link[] getLinks(int[] ids)
     {
-        Store.L l = new Store.L();
+        NLPStore.L l = new NLPStore.L();
 
         Link[] links = new Link[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            if (!LSTORE.read(ids[i], l))
+            if (!lstore.get(ids[i], l))
             {
                 links[i] = null;
                 continue;
@@ -148,7 +147,7 @@ public class Storage implements IStorage
             links[i].fnode = l.fnode;
             links[i].tnode = l.tnode;
 
-            getGObject(l.prop, links[i]);
+            getGObject(links[i], l.prop);
         }
 
         return links;
@@ -157,13 +156,13 @@ public class Storage implements IStorage
     @Override
     public boolean[] removeNode(int[] ids)
     {
-        Store.N n = new Store.N();
-        Store.L l = new Store.L();
+        NLPStore.N n = new NLPStore.N();
+        NLPStore.L l = new NLPStore.L();
 
         boolean[] rets = new boolean[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            rets[i] = NSTORE.free(ids[i], n);
+            rets[i] = nstore.remove(ids[i], n);
             if (!rets[i])
             {
                 continue;
@@ -176,17 +175,17 @@ public class Storage implements IStorage
             int linkId = n.link;
             while (linkId != ID_NULL)
             {
-                LSTORE.free(linkId, l);
+                lstore.remove(linkId, l);
                 removeGObject(l.prop);
                 if (l.fnode == ids[i])
                 {
                     adjustLinkForLinkRemove(l.tnode, l);
-                    linkId = l.fnodeNext;
+                    linkId = l.fnode_next;
                 }
                 else
                 {
                     adjustLinkForLinkRemove(l.fnode, l);
-                    linkId = l.tnodeNext;
+                    linkId = l.tnode_next;
                 }
             }
         }
@@ -197,12 +196,12 @@ public class Storage implements IStorage
     @Override
     public boolean[] removeLink(int[] ids)
     {
-        Store.L l = new Store.L();
+        NLPStore.L l = new NLPStore.L();
 
         boolean[] rets = new boolean[ids.length];
         for (int i = 0; i < ids.length; ++i)
         {
-            rets[i] = LSTORE.free(ids[i], l);
+            rets[i] = lstore.remove(ids[i], l);
             if (!rets[i])
             {
                 continue;
@@ -222,12 +221,12 @@ public class Storage implements IStorage
     @Override
     public boolean[] setNode(Node[] nodes)
     {
-        Store.N n = new Store.N();
+        NLPStore.N n = new NLPStore.N();
 
         boolean[] rets = new boolean[nodes.length];
         for (int i = 0; i < rets.length; ++i)
         {
-            rets[i] = NSTORE.read(nodes[i].id, n);
+            rets[i] = nstore.get(nodes[i].id, n);
             if (!rets[i])
             {
                 continue;
@@ -239,8 +238,8 @@ public class Storage implements IStorage
             removeGObject(n.prop);
 
             // set new props
-            n.prop = putGObject(nodes[i].id, nodes[i]);
-            NSTORE.write(nodes[i].id, n);
+            n.prop = putGObject(nodes[i], nodes[i].id);
+            nstore.put(nodes[i].id, n);
         }
 
         return rets;
@@ -249,12 +248,12 @@ public class Storage implements IStorage
     @Override
     public boolean[] setLink(Link[] links)
     {
-        Store.L l = new Store.L();
+        NLPStore.L l = new NLPStore.L();
 
         boolean[] rets = new boolean[links.length];
         for (int i = 0; i < rets.length; ++i)
         {
-            rets[i] = LSTORE.read(links[i].id, l);
+            rets[i] = lstore.get(links[i].id, l);
             if (!rets[i])
             {
                 continue;
@@ -264,8 +263,8 @@ public class Storage implements IStorage
             removeGObject(l.prop);
 
             // set new props
-            l.prop = putGObject(links[i].id, links[i]);
-            LSTORE.write(links[i].id, l);
+            l.prop = putGObject(links[i], links[i].id);
+            lstore.put(links[i].id, l);
         }
 
         return rets;
@@ -274,8 +273,8 @@ public class Storage implements IStorage
     @Override
     public Node[] showNodes(int count)
     {
-        List<Store.N> nlist = new ArrayList<>(count);
-        List<Integer> idList = NSTORE.show(true, count, nlist);
+        List<NLPStore.N> nlist = new ArrayList<>(count);
+        List<Integer> idList = nstore.show(true, count, nlist);
 
         Node[] nodes = new Node[nlist.size()];
         for (int i = 0; i < nodes.length; ++i)
@@ -283,7 +282,7 @@ public class Storage implements IStorage
             nodes[i] = new Node(idList.get(i));
             nodes[i].link = nlist.get(i).link;
 
-            getGObject(nlist.get(i).prop, nodes[i]);
+            getGObject(nodes[i], nlist.get(i).prop);
         }
 
         return nodes;
@@ -292,8 +291,8 @@ public class Storage implements IStorage
     @Override
     public Link[] showLinks(int count)
     {
-        List<Store.L> llist = new ArrayList<>(count);
-        List<Integer> idList = LSTORE.show(false, count, llist);
+        List<NLPStore.L> llist = new ArrayList<>(count);
+        List<Integer> idList = lstore.show(false, count, llist);
 
         Link[] links = new Link[llist.size()];
         for (int i = 0; i < links.length; ++i)
@@ -302,22 +301,22 @@ public class Storage implements IStorage
             links[i].fnode = llist.get(i).fnode;
             links[i].tnode = llist.get(i).tnode;
 
-            getGObject(llist.get(i).prop, links[i]);
+            getGObject(links[i], llist.get(i).prop);
         }
 
         return links;
     }
 
-    private int putGObject(int id, GObject<?> obj)
+    private int putGObject(GObject<?> obj, int id)
     {
         // category -> ltk.store & prop.store
         int propId = ID_NULL;
-        Store.P p = new Store.P();
+        NLPStore.P p = new NLPStore.P();
         for (int i = 0; i < obj.categorys.length; ++i)
         {
-            p.fill(FREE_FALSE, ID_NULL, LTKSTORE.write(obj.categorys[i]), propId, id);
-            propId = PSTORE.alloc(pebi);
-            PSTORE.write(propId, p);
+            p.fill(FREE_FALSE, ID_NULL, ltkstore.put(obj.categorys[i]), propId, id);
+            propId = pstore.alloc(pebi);
+            pstore.put(propId, p);
         }
 
         // properties -> ltk.store & prop.store
@@ -342,45 +341,45 @@ public class Storage implements IStorage
                     propValue = (boolean)value.value ? 1 : 0;
                     break;
                 default:
-                    propValue = VSTORE.write((String)value.value);
+                    propValue = vstore.put((String)value.value);
                     break;
             }
 
-            p.fill((byte)(FREE_FALSE | value.type), LTKSTORE.write(key), propValue, propId, id);
-            propId = PSTORE.alloc(pebi);
-            PSTORE.write(propId, p);
+            p.fill((byte)(FREE_FALSE | value.type), ltkstore.put(key), propValue, propId, id);
+            propId = pstore.alloc(pebi);
+            pstore.put(propId, p);
         }
 
         return propId;
     }
 
-    private void getGObject(int propId, GObject<?> obj)
+    private void getGObject(GObject<?> obj, int propId)
     {
-        Store.P p = new Store.P();
+        NLPStore.P p = new NLPStore.P();
 
         List<String> categoryList = new ArrayList<String>();
         do
         {
-            PSTORE.read(propId, p);
+            pstore.get(propId, p);
             if (p.key == ID_NULL)
             {
-                categoryList.add(LTKSTORE.read((int)p.value));
+                categoryList.add(ltkstore.get((int)p.value));
             }
             else
             {
-                switch (p.getValueType())
+                switch (p.valueType())
                 {
                     case PropValue.TYPE_NUMBERIC:
-                        obj.set(LTKSTORE.read(p.key), p.value);
+                        obj.set(ltkstore.get(p.key), p.value);
                         break;
                     case PropValue.TYPE_DECIMAL:
-                        obj.set(LTKSTORE.read(p.key), Double.longBitsToDouble(p.value));
+                        obj.set(ltkstore.get(p.key), Double.longBitsToDouble(p.value));
                         break;
                     case PropValue.TYPE_BOOLEAN:
-                        obj.set(LTKSTORE.read(p.key), p.value == 0 ? false : true);
+                        obj.set(ltkstore.get(p.key), p.value == 0 ? false : true);
                         break;
                     default:
-                        obj.set(LTKSTORE.read(p.key), VSTORE.read(p.value));
+                        obj.set(ltkstore.get(p.key), vstore.get(p.value));
                         break;
                 }
             }
@@ -392,110 +391,111 @@ public class Storage implements IStorage
 
     private void removeGObject(int propId)
     {
-        Store.P p = new Store.P();
+        NLPStore.P p = new NLPStore.P();
         while (propId != ID_NULL)
         {
-            PSTORE.free(propId, p);
-            if (p.getValueType() == PropValue.TYPE_STRING)
+            pstore.remove(propId, p);
+            if (p.valueType() == PropValue.TYPE_STRING)
             {
-                VSTORE.free(p.value);
+                vstore.remove(p.value);
             }
             propId = p.next;
         }
     }
 
-    private int adjustLinkForLinkPut(int nodeId, Store.N n, int linkId)
+    private int adjustLinkForLinkPut(int nodeId, NLPStore.N n, int linkId)
     {
+        int prev = n.link;
+
         // first link
         if (n.link == ID_NULL)
         {
             n.link = linkId;
-            NSTORE.write(nodeId, n);
-            return ID_NULL;
+            nstore.put(nodeId, n);
+            return prev;
         }
 
         // adjust node last link
-        int adjustLinkId = n.link;
-        Store.L l = new Store.L();
+        NLPStore.L l = new NLPStore.L();
         do
         {
-            LSTORE.read(adjustLinkId, l);
+            lstore.get(prev, l);
             if (l.fnode == nodeId)
             {
-                if (l.fnodeNext == ID_NULL)
+                if (l.fnode_next == ID_NULL)
                 {
-                    l.fnodeNext = linkId;
-                    LSTORE.write(adjustLinkId, l);
+                    l.fnode_next = linkId;
+                    lstore.put(prev, l);
                     break;
                 }
                 else
                 {
-                    adjustLinkId = l.fnodeNext;
+                    prev = l.fnode_next;
                 }
             }
             else
             {
-                if (l.tnodeNext == ID_NULL)
+                if (l.tnode_next == ID_NULL)
                 {
-                    l.tnodeNext = linkId;
-                    LSTORE.write(adjustLinkId, l);
+                    l.tnode_next = linkId;
+                    lstore.put(prev, l);
                     break;
                 }
                 else
                 {
-                    adjustLinkId = l.tnodeNext;
+                    prev = l.tnode_next;
                 }
             }
         } while (true);
 
-        return adjustLinkId;
+        return prev;
     }
 
-    private void adjustLinkForLinkRemove(int nodeId, Store.L l)
+    private void adjustLinkForLinkRemove(int nodeId, NLPStore.L l)
     {
         boolean isfnode = (nodeId == l.fnode);
 
         // adjust previous link
-        int prev = isfnode ? l.fnodePrev : l.tnodePrev;
+        int prev = isfnode ? l.fnode_prev : l.tnode_prev;
         if (prev != ID_NULL)
         {
-            Store.L tl = new Store.L();
-            LSTORE.read(prev, tl);
+            NLPStore.L tl = new NLPStore.L();
+            lstore.get(prev, tl);
             if (tl.fnode == l.fnode)
             {
-                tl.fnodeNext = isfnode ? l.fnodeNext : l.tnodeNext;
+                tl.fnode_next = isfnode ? l.fnode_next : l.tnode_next;
             }
             else
             {
-                tl.tnodeNext = isfnode ? l.fnodeNext : l.tnodeNext;
+                tl.tnode_next = isfnode ? l.fnode_next : l.tnode_next;
             }
-            LSTORE.write(prev, tl);
+            lstore.put(prev, tl);
         }
 
         // adjust next link
-        int next = isfnode ? l.fnodeNext : l.tnodeNext;
+        int next = isfnode ? l.fnode_next : l.tnode_next;
         if (next != ID_NULL)
         {
-            Store.L tl = new Store.L();
-            LSTORE.read(next, tl);
+            NLPStore.L tl = new NLPStore.L();
+            lstore.get(next, tl);
             if (tl.fnode == l.fnode)
             {
-                tl.fnodePrev = isfnode ? l.fnodePrev : l.tnodePrev;
+                tl.fnode_prev = isfnode ? l.fnode_prev : l.tnode_prev;
             }
             else
             {
-                tl.tnodePrev = isfnode ? l.fnodePrev : l.tnodePrev;
+                tl.tnode_prev = isfnode ? l.fnode_prev : l.tnode_prev;
             }
-            LSTORE.write(l.fnodeNext, tl);
+            lstore.put(l.fnode_next, tl);
         }
 
         // adjust node(remove link is the only one)
         if (prev == ID_NULL)
         {
-            Store.N n = new Store.N();
-            NSTORE.read(nodeId, n);
+            NLPStore.N n = new NLPStore.N();
+            nstore.get(nodeId, n);
             n.link = next;
-            NSTORE.write(nodeId, n);
+            nstore.put(nodeId, n);
         }
     }
 

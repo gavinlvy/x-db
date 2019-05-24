@@ -24,6 +24,8 @@ public interface IStorage
     public final static byte FREE_TRUE = (byte)0x00;
 
     public final static byte FREE_FALSE = (byte)0x80;
+    
+    public final static byte VALUE_TYPE_MASK = 0x0F;
 
     public void initialize();
 
